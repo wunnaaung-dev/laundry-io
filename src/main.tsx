@@ -22,6 +22,11 @@ import ContractListPage from './pages/contracts/contract-list.tsx'
 import ContractFormPage from './pages/contracts/contract-form.tsx'
 import ProfilePage from './pages/profile/profile-page.tsx'
 import HotelContractsPage from './pages/contracts/hotel-contracts.tsx'
+import HotelOrderListPage from './pages/orders/hotel-order-list.tsx'
+import HotelOrderFormPage from './pages/orders/hotel-order-form.tsx'
+import HotelOrderDetailPage from './pages/orders/hotel-order-detail.tsx'
+import FactoryOrderListPage from './pages/orders/factory-order-list.tsx'
+import FactoryOrderDetailPage from './pages/orders/factory-order-detail.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -29,7 +34,7 @@ createRoot(document.getElementById('root')!).render(
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route
-          element={<ProtectedRoute allowedRole="hotel_super_admin" />}
+          element={<ProtectedRoute allowedScopes={['hotel']} />}
         >
           <Route element={<HotelLayout />}>
             <Route path="/hotel/dashboard" element={<HotelDashboard />} />
@@ -41,10 +46,15 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/hotel/users/:id/edit" element={<UserFormPage />} />
             <Route path="/hotel/profile" element={<ProfilePage />} />
             <Route path="/hotel/contracts" element={<HotelContractsPage />} />
+            <Route element={<ProtectedRoute requiredModule="order_management" />}>
+              <Route path="/hotel/orders" element={<HotelOrderListPage />} />
+              <Route path="/hotel/orders/new" element={<HotelOrderFormPage />} />
+              <Route path="/hotel/orders/:id" element={<HotelOrderDetailPage />} />
+            </Route>
           </Route>
         </Route>
         <Route
-          element={<ProtectedRoute allowedRole="factory_super_admin" />}
+          element={<ProtectedRoute allowedScopes={['factory']} />}
         >
           <Route element={<FactoryLayout />}>
             <Route path="/factory/dashboard" element={<FactoryDashboard />} />
@@ -64,6 +74,10 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/factory/contracts" element={<ContractListPage />} />
             <Route path="/factory/contracts/new" element={<ContractFormPage />} />
             <Route path="/factory/contracts/:id/edit" element={<ContractFormPage />} />
+            <Route element={<ProtectedRoute requiredModule="order_management" />}>
+              <Route path="/factory/orders" element={<FactoryOrderListPage />} />
+              <Route path="/factory/orders/:id" element={<FactoryOrderDetailPage />} />
+            </Route>
           </Route>
         </Route>
         <Route path="*" element={<NotFoundPage />} />

@@ -64,14 +64,60 @@ export interface OrderItem {
   weightKg?: number
 }
 
-export type OrderStatus = 'pending' | 'processing' | 'completed' | 'cancelled'
+export type OrderStatus =
+  | 'draft'
+  | 'scheduled'
+  | 'ready_to_deliver'
+  | 'cancelled'
+
+export interface StatusHistoryEntry {
+  from: OrderStatus
+  to: OrderStatus
+  timestamp: string
+}
+
+export type LotStatus =
+  | 'tagging'
+  | 'sorting'
+  | 'washing'
+  | 'drying'
+  | 'ironing'
+  | 'folding'
+  | 'qc'
+  | 'dispatch'
+  | 'cancelled'
+
+export interface LotStatusHistoryEntry {
+  from: LotStatus
+  to: LotStatus
+  timestamp: string
+}
+
+export interface Lot {
+  id: string
+  lotNumber: string
+  category: LinenCategory
+  quantity: number
+  estimatedWeightKg: number
+  route: string
+  status: LotStatus
+  qcCheckPassed: boolean
+  statusHistory: LotStatusHistoryEntry[]
+  createdAt: string
+  updatedAt: string
+}
 
 export interface Order {
   id: string
   customerId: string
   contractId: string
   items: OrderItem[]
+  lots: Lot[]
   status: OrderStatus
+  statusHistory: StatusHistoryEntry[]
+  expectedCost: number
+  pickupDate?: string
+  notes?: string
   createdAt: string
   updatedAt: string
 }
