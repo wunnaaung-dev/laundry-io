@@ -1,9 +1,5 @@
-function App() {
-  return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <h1 className="text-4xl font-bold text-gray-800">Laundry App</h1>
-    </div>
-  )
-}
+import { Navigate } from 'react-router-dom'
 
-export default App
+export default function App() {
+  return <Navigate to="/login" replace />
+}

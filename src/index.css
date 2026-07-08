@@ -1,1 +1,357 @@
 @import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
+@import "tw-animate-css";
+@import "./shared/styles/client-portal-theme.css";
+@import "@fontsource-variable/geist";
+@import "@fontsource/noto-sans-thai";
+@import "@fontsource/noto-sans-sc";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* 01 — Color Tokens (ZHIJING Laundry Platform · Dark-first) */
+
+  /* Backgrounds */
+  --color-bg-base: #0d1117;
+  --color-bg-surface: #161b22;
+  --color-bg-elevated: #1c2128;
+  --color-bg-hover: #21262d;
+
+  /* 08 — Elevation / Surface Layers */
+  --color-layer-0: #0d1117;
+  --color-layer-1: #161b22;
+  --color-layer-2: #1c2330;
+  --color-layer-3: #21262d;
+
+  /* Borders */
+  --color-border-default: #30363d;
+  --color-border-active: #484f58;
+
+  /* Accent / Semantic */
+  --color-cyan-primary: #00b4d8;
+  --color-teal-secondary: #00c9a7;
+  --color-amber-warning: #ffa726;
+  --color-red-danger: #f85149;
+  --color-green-success: #3fb950;
+  --color-purple-ai: #bc8cff;
+
+  /* Text */
+  --color-text-primary: #e6edf3;
+  --color-text-secondary: #8b949e;
+  --color-text-tertiary: #858d78;
+  --color-text-accent: #00b4d8;
+
+  /* 05 — Status Badges */
+  --color-status-in-progress: #3fb950;
+  --color-status-scanning: #00b4d8;
+  --color-status-pending: #ffa726;
+  --color-status-flagged: #f85149;
+  --color-status-ai-insight: #bc8cff;
+  --color-status-inactive: #8b949e;
+  --color-status-delivered: #3fb950;
+
+  /* 04 — Border Radius */
+  --radius-none: 0;
+  --radius-badge: 4px;
+  --radius-input-btn: 6px;
+  --radius-card-node: 8px;
+  --radius-panel: 12px;
+  --radius-pill-tag: 24px;
+
+  /* Shadcn semantic mapping */
+  --background: var(--color-bg-base);
+  --foreground: var(--color-text-primary);
+  --card: var(--color-layer-2);
+  --card-foreground: var(--color-text-primary);
+  --popover: var(--color-layer-3);
+  --popover-foreground: var(--color-text-primary);
+  --primary: var(--color-cyan-primary);
+  --primary-foreground: var(--color-bg-base);
+  --secondary: var(--color-bg-surface);
+  --secondary-foreground: var(--color-text-primary);
+  --muted: var(--color-bg-surface);
+  --muted-foreground: var(--color-text-secondary);
+  --accent: var(--color-bg-hover);
+  --accent-foreground: var(--color-text-primary);
+  --destructive: var(--color-red-danger);
+  --border: var(--color-border-default);
+  --input: var(--color-border-default);
+  --ring: var(--color-cyan-primary);
+  --chart-1: var(--color-cyan-primary);
+  --chart-2: var(--color-teal-secondary);
+  --chart-3: var(--color-amber-warning);
+  --chart-4: var(--color-purple-ai);
+  --chart-5: var(--color-green-success);
+  --radius: var(--radius-card-node);
+  --sidebar: var(--color-layer-1);
+  --sidebar-foreground: var(--color-text-primary);
+  --sidebar-primary: var(--color-cyan-primary);
+  --sidebar-primary-foreground: var(--color-bg-base);
+  --sidebar-accent: var(--color-bg-hover);
+  --sidebar-accent-foreground: var(--color-text-primary);
+  --sidebar-border: var(--color-border-default);
+  --sidebar-ring: var(--color-cyan-primary);
+}
+
+.dark {
+  --background: var(--color-bg-base);
+  --foreground: var(--color-text-primary);
+  --card: var(--color-layer-2);
+  --card-foreground: var(--color-text-primary);
+  --popover: var(--color-layer-3);
+  --popover-foreground: var(--color-text-primary);
+  --primary: var(--color-cyan-primary);
+  --primary-foreground: var(--color-bg-base);
+  --secondary: var(--color-bg-surface);
+  --secondary-foreground: var(--color-text-primary);
+  --muted: var(--color-bg-surface);
+  --muted-foreground: var(--color-text-secondary);
+  --accent: var(--color-bg-hover);
+  --accent-foreground: var(--color-text-primary);
+  --destructive: var(--color-red-danger);
+  --border: var(--color-border-default);
+  --input: var(--color-border-default);
+  --ring: var(--color-cyan-primary);
+  --chart-1: var(--color-cyan-primary);
+  --chart-2: var(--color-teal-secondary);
+  --chart-3: var(--color-amber-warning);
+  --chart-4: var(--color-purple-ai);
+  --chart-5: var(--color-green-success);
+  --sidebar: var(--color-layer-1);
+  --sidebar-foreground: var(--color-text-primary);
+  --sidebar-primary: var(--color-cyan-primary);
+  --sidebar-primary-foreground: var(--color-bg-base);
+  --sidebar-accent: var(--color-bg-hover);
+  --sidebar-accent-foreground: var(--color-text-primary);
+  --sidebar-border: var(--color-border-default);
+  --sidebar-ring: var(--color-cyan-primary);
+}
+
+/* Active sidebar nav — cyan accent (operator / factory layouts) */
+:not([data-client-portal-theme]) [data-sidebar='menu-button'][data-active='true'],
+:not([data-client-portal-theme]) [data-sidebar='menu-button'][aria-current='page'] {
+  background-color: color-mix(in oklch, var(--color-cyan-primary) 12%, var(--sidebar));
+  color: var(--sidebar-foreground);
+  font-weight: 500;
+  box-shadow: inset 3px 0 0 var(--color-cyan-primary);
+}
+
+:not([data-client-portal-theme]) [data-sidebar='menu-button'][data-active='true'] svg,
+:not([data-client-portal-theme]) [data-sidebar='menu-button'][aria-current='page'] svg {
+  color: var(--sidebar-foreground);
+}
+
+/* Inactive sidebar nav — transparent (no hover background) */
+:not([data-client-portal-theme]) [data-sidebar='content'] [data-sidebar='menu-button']:not([data-active='true']):not([aria-current='page']),
+:not([data-client-portal-theme]) [data-sidebar='content'] [data-sidebar='menu-button']:not([data-active='true']):not([aria-current='page']):hover,
+:not([data-client-portal-theme]) [data-sidebar='content'] [data-sidebar='menu-button']:not([data-active='true']):not([aria-current='page']):active {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: "Geist Variable", sans-serif;
+
+  /* ZHIJING design tokens */
+  --color-bg-base: var(--color-bg-base);
+  --color-bg-surface: var(--color-bg-surface);
+  --color-bg-elevated: var(--color-bg-elevated);
+  --color-bg-hover: var(--color-bg-hover);
+  --color-layer-0: var(--color-layer-0);
+  --color-layer-1: var(--color-layer-1);
+  --color-layer-2: var(--color-layer-2);
+  --color-layer-3: var(--color-layer-3);
+  --color-border-default: var(--color-border-default);
+  --color-border-active: var(--color-border-active);
+  --color-cyan-primary: var(--color-cyan-primary);
+  --color-teal-secondary: var(--color-teal-secondary);
+  --color-amber-warning: var(--color-amber-warning);
+  --color-red-danger: var(--color-red-danger);
+  --color-green-success: var(--color-green-success);
+  --color-purple-ai: var(--color-purple-ai);
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-tertiary: var(--color-text-tertiary);
+  --color-text-accent: var(--color-text-accent);
+  --color-status-in-progress: var(--color-status-in-progress);
+  --color-status-scanning: var(--color-status-scanning);
+  --color-status-pending: var(--color-status-pending);
+  --color-status-flagged: var(--color-status-flagged);
+  --color-status-ai-insight: var(--color-status-ai-insight);
+  --color-status-inactive: var(--color-status-inactive);
+  --color-status-delivered: var(--color-status-delivered);
+
+  /* Shadcn theme bridge */
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+
+  --radius-sm: var(--radius-badge);
+  --radius-md: var(--radius-input-btn);
+  --radius-lg: var(--radius-card-node);
+  --radius-xl: var(--radius-panel);
+  --radius-2xl: var(--radius-pill-tag);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  html {
+    @apply font-sans;
+  }
+
+  input[type='date'],
+  input[type='datetime-local'],
+  input[type='time'] {
+    color-scheme: dark;
+  }
+
+  input[type='date']::-webkit-calendar-picker-indicator,
+  input[type='datetime-local']::-webkit-calendar-picker-indicator,
+  input[type='time']::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.9;
+    filter: invert(1) brightness(1.25);
+  }
+
+  input[type='date']::-webkit-calendar-picker-indicator:hover,
+  input[type='datetime-local']::-webkit-calendar-picker-indicator:hover,
+  input[type='time']::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+}
+
+@layer utilities {
+  .scrollbar-refined {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, var(--color-border-active) 70%, transparent)
+      transparent;
+  }
+
+  .scrollbar-refined::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  .scrollbar-refined::-webkit-scrollbar-track {
+    margin-block: 4px;
+    background: transparent;
+  }
+
+  .scrollbar-refined::-webkit-scrollbar-thumb {
+    border: 1px solid transparent;
+    border-radius: 9999px;
+    background-color: color-mix(
+      in oklch,
+      var(--color-border-default) 55%,
+      transparent
+    );
+    background-clip: padding-box;
+    transition: background-color 150ms ease;
+  }
+
+  .scrollbar-refined:hover::-webkit-scrollbar-thumb {
+    background-color: color-mix(
+      in oklch,
+      var(--color-border-active) 85%,
+      transparent
+    );
+  }
+
+  .scrollbar-refined::-webkit-scrollbar-thumb:active {
+    background-color: var(--color-cyan-primary);
+  }
+
+  .scrollbar-refined::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  .scrollbar-custody {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, var(--color-cyan-primary) 45%, transparent)
+      color-mix(in oklch, var(--color-border-default) 20%, transparent);
+  }
+
+  .scrollbar-custody::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-custody::-webkit-scrollbar-track {
+    margin-block: 6px;
+    border-radius: 9999px;
+    background: color-mix(in oklch, var(--color-border-default) 18%, transparent);
+  }
+
+  .scrollbar-custody::-webkit-scrollbar-thumb {
+    border: 1px solid transparent;
+    border-radius: 9999px;
+    background-color: color-mix(
+      in oklch,
+      var(--color-cyan-primary) 35%,
+      var(--color-border-default)
+    );
+    background-clip: padding-box;
+    box-shadow: 0 0 6px color-mix(in oklch, var(--color-cyan-primary) 25%, transparent);
+    transition:
+      background-color 150ms ease,
+      box-shadow 150ms ease;
+  }
+
+  .scrollbar-custody:hover::-webkit-scrollbar-thumb {
+    background-color: color-mix(in oklch, var(--color-cyan-primary) 65%, transparent);
+    box-shadow: 0 0 10px color-mix(in oklch, var(--color-cyan-primary) 40%, transparent);
+  }
+
+  .scrollbar-custody::-webkit-scrollbar-thumb:active {
+    background-color: var(--color-cyan-primary);
+    box-shadow: 0 0 12px color-mix(in oklch, var(--color-cyan-primary) 55%, transparent);
+  }
+
+  .scrollbar-custody::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
+html[lang='th'] body {
+  font-family: 'Noto Sans Thai', 'Geist Variable', system-ui, sans-serif;
+}
+
+html[lang='zh-CN'] body {
+  font-family: 'Noto Sans SC', 'Geist Variable', system-ui, sans-serif;
+}
