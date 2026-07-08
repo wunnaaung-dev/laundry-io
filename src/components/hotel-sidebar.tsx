@@ -14,6 +14,8 @@ import { useAuthStore } from '@/stores/auth-store.ts'
 
 const navItems = [
   { title: 'Dashboard', url: '/hotel/dashboard' },
+  { title: 'My Profile', url: '/hotel/profile' },
+  { title: 'Contracts', url: '/hotel/contracts' },
   { title: 'Orders', url: '/hotel/orders' },
   { title: 'Linen Tracking', url: '/hotel/linen-tracking' },
   { title: 'Invoices', url: '/hotel/invoices' },

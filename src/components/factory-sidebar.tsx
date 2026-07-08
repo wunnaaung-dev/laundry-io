@@ -14,6 +14,9 @@ import { useAuthStore } from '@/stores/auth-store.ts'
 
 const navItems = [
   { title: 'Dashboard', url: '/factory/dashboard' },
+  { title: 'Customers', url: '/factory/customers' },
+  { title: 'Pricing Templates', url: '/factory/pricing-templates' },
+  { title: 'Contracts', url: '/factory/contracts' },
   { title: 'Orders', url: '/factory/orders' },
   { title: 'Linen Tracking', url: '/factory/linen-tracking' },
   { title: 'Warehouse', url: '/factory/warehouse' },

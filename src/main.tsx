@@ -13,6 +13,15 @@ import RoleLevelListPage from './pages/role-levels/role-level-list.tsx'
 import RoleLevelFormPage from './pages/role-levels/role-level-form.tsx'
 import UserListPage from './pages/users/user-list.tsx'
 import UserFormPage from './pages/users/user-form.tsx'
+import CustomerListPage from './pages/customers/customer-list.tsx'
+import CustomerFormPage from './pages/customers/customer-form.tsx'
+import CustomerDetailPage from './pages/customers/customer-detail.tsx'
+import PricingTemplateListPage from './pages/pricing-templates/pricing-template-list.tsx'
+import PricingTemplateFormPage from './pages/pricing-templates/pricing-template-form.tsx'
+import ContractListPage from './pages/contracts/contract-list.tsx'
+import ContractFormPage from './pages/contracts/contract-form.tsx'
+import ProfilePage from './pages/profile/profile-page.tsx'
+import HotelContractsPage from './pages/contracts/hotel-contracts.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -30,6 +39,8 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/hotel/users" element={<UserListPage />} />
             <Route path="/hotel/users/new" element={<UserFormPage />} />
             <Route path="/hotel/users/:id/edit" element={<UserFormPage />} />
+            <Route path="/hotel/profile" element={<ProfilePage />} />
+            <Route path="/hotel/contracts" element={<HotelContractsPage />} />
           </Route>
         </Route>
         <Route
@@ -43,6 +54,16 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/factory/users" element={<UserListPage />} />
             <Route path="/factory/users/new" element={<UserFormPage />} />
             <Route path="/factory/users/:id/edit" element={<UserFormPage />} />
+            <Route path="/factory/customers" element={<CustomerListPage />} />
+            <Route path="/factory/customers/new" element={<CustomerFormPage />} />
+            <Route path="/factory/customers/:id" element={<CustomerDetailPage />} />
+            <Route path="/factory/customers/:id/edit" element={<CustomerFormPage />} />
+            <Route path="/factory/pricing-templates" element={<PricingTemplateListPage />} />
+            <Route path="/factory/pricing-templates/new" element={<PricingTemplateFormPage />} />
+            <Route path="/factory/pricing-templates/:id/edit" element={<PricingTemplateFormPage />} />
+            <Route path="/factory/contracts" element={<ContractListPage />} />
+            <Route path="/factory/contracts/new" element={<ContractFormPage />} />
+            <Route path="/factory/contracts/:id/edit" element={<ContractFormPage />} />
           </Route>
         </Route>
         <Route path="*" element={<NotFoundPage />} />
