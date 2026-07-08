@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './index.css'
 import LoginPage from './pages/auth/login.tsx'
 import HotelLayout from './layouts/hotel-layout.tsx'
@@ -8,6 +8,7 @@ import FactoryLayout from './layouts/factory-layout.tsx'
 import HotelDashboard from './pages/dashboard/hotel-dashboard.tsx'
 import FactoryDashboard from './pages/dashboard/factory-dashboard.tsx'
 import ProtectedRoute from './components/auth/protected-route.tsx'
+import NotFoundPage from './pages/not-found.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -28,7 +29,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/factory/dashboard" element={<FactoryDashboard />} />
           </Route>
         </Route>
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

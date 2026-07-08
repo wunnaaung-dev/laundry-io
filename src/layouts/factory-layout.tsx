@@ -1,14 +1,26 @@
 import { Outlet } from 'react-router-dom'
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from '@/components/ui/sidebar.tsx'
+import { FactorySidebar } from '@/components/factory-sidebar.tsx'
+import { Separator } from '@/components/ui/separator.tsx'
 
 export default function FactoryLayout() {
   return (
-    <div className="min-h-screen bg-green-50">
-      <header className="bg-green-700 text-white px-6 py-4">
-        <h1 className="text-xl font-bold">Factory Dashboard</h1>
-      </header>
-      <main className="p-6">
-        <Outlet />
-      </main>
-    </div>
+    <SidebarProvider>
+      <FactorySidebar />
+      <SidebarInset>
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger />
+          <Separator orientation="vertical" className="h-6" />
+          <h1 className="text-sm font-semibold">Factory Dashboard</h1>
+        </header>
+        <main className="flex-1 p-6">
+          <Outlet />
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
