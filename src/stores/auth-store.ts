@@ -1,6 +1,7 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import type { AuthUser, UserRole } from '../types/auth.ts'
-import { MOCK_USERS } from '../constants/user.ts'
+import { useRoleStore } from './role-store.ts'
 
 interface AuthState {
   user: AuthUser | null
@@ -10,29 +11,36 @@ interface AuthState {
   hasRole: (role: UserRole) => boolean
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  isAuthenticated: false,
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      user: null,
+      isAuthenticated: false,
 
-  login: (email, password) => {
-    const found = MOCK_USERS.find(
-      (u) => u.email === email && u.password === password,
-    )
-    if (!found) return false
+      login: (email, password) => {
+        const { users } = useRoleStore.getState()
+        const found = users.find(
+          (u) => u.email === email && u.password === password && !u.isDeleted,
+        )
+        if (!found) return false
 
-    const user: AuthUser = {
-      id: found.id,
-      email: found.email,
-      name: found.name,
-      role: found.role,
-    }
-    set({ user, isAuthenticated: true })
-    return true
-  },
+        const user: AuthUser = {
+          id: found.id,
+          email: found.email,
+          name: found.name,
+          role: found.role,
+          roleLevelId: found.roleLevelId,
+        }
+        set({ user, isAuthenticated: true })
+        return true
+      },
 
-  logout: () => {
-    set({ user: null, isAuthenticated: false })
-  },
+      logout: () => {
+        set({ user: null, isAuthenticated: false })
+      },
 
-  hasRole: (role) => get().user?.role === role,
-}))
+      hasRole: (role) => get().user?.role === role,
+    }),
+    { name: 'laundry-auth-store' },
+  ),
+)

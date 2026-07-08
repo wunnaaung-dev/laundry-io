@@ -20,6 +20,11 @@ const navItems = [
   { title: 'Reports', url: '/hotel/reports' },
 ]
 
+const adminItems = [
+  { title: 'Role Levels', url: '/hotel/role-levels' },
+  { title: 'Users', url: '/hotel/users' },
+]
+
 export function HotelSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
@@ -39,6 +44,20 @@ export function HotelSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <a href={item.url}>{item.title}</a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Administration</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {adminItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <a href={item.url}>{item.title}</a>

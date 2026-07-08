@@ -23,6 +23,11 @@ const navItems = [
   { title: 'Purchasing', url: '/factory/purchasing' },
 ]
 
+const adminItems = [
+  { title: 'Role Levels', url: '/factory/role-levels' },
+  { title: 'Users', url: '/factory/users' },
+]
+
 export function FactorySidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
@@ -42,6 +47,20 @@ export function FactorySidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <a href={item.url}>{item.title}</a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Administration</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {adminItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <a href={item.url}>{item.title}</a>
