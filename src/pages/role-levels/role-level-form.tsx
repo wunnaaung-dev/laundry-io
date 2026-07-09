@@ -63,6 +63,24 @@ export default function RoleLevelFormPage() {
   )
   const [error, setError] = useState('')
 
+  if (isEdit && !existing) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Role Level Not Found</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            The role level you're trying to edit doesn't exist.
+          </p>
+          <Button onClick={() => navigate('/factory/role-levels')}>
+            Back to Role Levels
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
   function handlePermissionChange(mod: ResourceModule, level: AccessLevel) {
     setPermissions((prev) => ({ ...prev, [mod]: level }))
   }
@@ -82,7 +100,7 @@ export default function RoleLevelFormPage() {
       createRoleLevel({ name: name.trim(), description: description.trim(), scope, permissions })
     }
 
-    navigate('..', { relative: 'path' })
+    navigate('/factory/role-levels')
   }
 
   return (
@@ -156,7 +174,7 @@ export default function RoleLevelFormPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate('..', { relative: 'path' })}
+              onClick={() => navigate('/factory/role-levels')}
             >
               Cancel
             </Button>

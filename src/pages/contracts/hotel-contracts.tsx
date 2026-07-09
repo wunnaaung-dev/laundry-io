@@ -8,43 +8,31 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table.tsx'
-import { useAuthStore } from '@/stores/auth-store.ts'
 import { useCustomerStore } from '@/stores/customer-store.ts'
 
 export default function HotelContractsPage() {
-  const user = useAuthStore((s) => s.user)
   const customers = useCustomerStore((s) => s.customers)
   const pricingTemplates = useCustomerStore((s) => s.pricingTemplates)
   const contracts = useCustomerStore((s) => s.contracts)
 
-  const profile = customers.find(
-    (c) => c.email === user?.email || c.contactPerson === user?.name,
-  )
-
   const templateMap = new Map(pricingTemplates.map((t) => [t.id, t.name]))
-
-  const myContracts = profile
-    ? contracts.filter((c) => c.customerId === profile.id)
-    : []
+  const customerMap = new Map(customers.map((c) => [c.id, c.companyName]))
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>My Contracts</CardTitle>
+        <CardTitle>Contracts</CardTitle>
       </CardHeader>
       <CardContent>
-        {!profile ? (
+        {contracts.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No company profile found. Contact your factory administrator.
-          </p>
-        ) : myContracts.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No contracts assigned to your company yet.
+            No contracts yet.
           </p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Customer</TableHead>
                 <TableHead>Contract Name</TableHead>
                 <TableHead>Pricing Template</TableHead>
                 <TableHead>Period</TableHead>
@@ -54,8 +42,9 @@ export default function HotelContractsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {myContracts.map((ct) => (
+              {contracts.map((ct) => (
                 <TableRow key={ct.id}>
+                  <TableCell>{customerMap.get(ct.customerId) ?? 'Unknown'}</TableCell>
                   <TableCell className="font-medium">{ct.contractName}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {templateMap.get(ct.pricingTemplateId) ?? 'Unknown'}

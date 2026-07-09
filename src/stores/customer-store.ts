@@ -166,9 +166,9 @@ function appendSeed(
 export const useCustomerStore = create<CustomerState>()(
   persist(
     (set) => ({
-      customers: [],
-      pricingTemplates: [],
-      contracts: [],
+      customers: [...DEFAULT_CUSTOMERS],
+      pricingTemplates: [...DEFAULT_TEMPLATES],
+      contracts: [...DEFAULT_CONTRACTS],
 
       createCustomer: (data) =>
         set((state) => {

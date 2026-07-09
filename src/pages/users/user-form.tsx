@@ -91,7 +91,7 @@ export default function UserFormPage() {
       })
     }
 
-    navigate('..', { relative: 'path' })
+    navigate('/factory/users')
   }
 
   return (
@@ -177,7 +177,7 @@ export default function UserFormPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate('..', { relative: 'path' })}
+              onClick={() => navigate('/factory/users')}
             >
               Cancel
             </Button>

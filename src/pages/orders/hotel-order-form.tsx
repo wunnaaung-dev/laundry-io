@@ -12,7 +12,6 @@ import {
   SelectValue,
 } from '@/components/ui/select.tsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx'
-import { useAuthStore } from '@/stores/auth-store.ts'
 import { useCustomerStore } from '@/stores/customer-store.ts'
 import { useOrderStore } from '@/stores/order-store.ts'
 import type { LinenCategory } from '@/types/customer.ts'
@@ -31,23 +30,19 @@ function emptyItem(): LineItem {
 
 export default function HotelOrderFormPage() {
   const navigate = useNavigate()
-  const user = useAuthStore((s) => s.user)
   const customers = useCustomerStore((s) => s.customers)
   const contracts = useCustomerStore((s) => s.contracts)
   const createOrder = useOrderStore((s) => s.createOrder)
 
-  const profile = customers.find(
-    (c) => c.email === user?.email || c.contactPerson === user?.name,
-  )
-
-  const myContracts = profile
-    ? contracts.filter((c) => c.customerId === profile.id)
-    : []
-
+  const [customerId, setCustomerId] = useState('')
   const [contractId, setContractId] = useState('')
   const [items, setItems] = useState<LineItem[]>([emptyItem()])
   const [pickupDate, setPickupDate] = useState('')
   const [notes, setNotes] = useState('')
+
+  const availableContracts = customerId
+    ? contracts.filter((c) => c.customerId === customerId)
+    : []
 
   function updateItem(index: number, field: keyof LineItem, value: string | number) {
     setItems((prev) =>
@@ -65,7 +60,7 @@ export default function HotelOrderFormPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!profile || !contractId) return
+    if (!customerId || !contractId) return
 
     const orderItems = items
       .filter((it) => it.quantity > 0)
@@ -78,7 +73,7 @@ export default function HotelOrderFormPage() {
     if (orderItems.length === 0) return
 
     createOrder({
-      customerId: profile.id,
+      customerId,
       contractId,
       items: orderItems,
       expectedCost: 0,
@@ -89,29 +84,7 @@ export default function HotelOrderFormPage() {
     navigate('/hotel/orders')
   }
 
-  if (!profile) {
-    return (
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground">
-            No company profile found. Contact your factory administrator.
-          </p>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (myContracts.length === 0) {
-    return (
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground">
-            No contracts assigned. You need a contract before placing an order.
-          </p>
-        </CardContent>
-      </Card>
-    )
-  }
+  const canSubmit = customerId && contractId && items.some((it) => it.quantity > 0)
 
   return (
     <Card>
@@ -121,13 +94,29 @@ export default function HotelOrderFormPage() {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="contract">Contract</Label>
-            <Select value={contractId} onValueChange={setContractId}>
-              <SelectTrigger id="contract">
-                <SelectValue placeholder="Select a contract" />
+            <Label htmlFor="customer">Customer</Label>
+            <Select value={customerId} onValueChange={setCustomerId}>
+              <SelectTrigger id="customer">
+                <SelectValue placeholder="Select a customer" />
               </SelectTrigger>
               <SelectContent>
-                {myContracts.map((c) => (
+                {customers.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.companyName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="contract">Contract</Label>
+            <Select value={contractId} onValueChange={setContractId} disabled={!customerId}>
+              <SelectTrigger id="contract">
+                <SelectValue placeholder={customerId ? 'Select a contract' : 'Select a customer first'} />
+              </SelectTrigger>
+              <SelectContent>
+                {availableContracts.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.contractName}
                   </SelectItem>
@@ -222,7 +211,13 @@ export default function HotelOrderFormPage() {
           </div>
 
           <div className="flex gap-3">
-            <Button type="submit">Create Order</Button>
+            <Button type="submit" disabled={!canSubmit}>
+              {!customerId
+                ? 'Select a customer'
+                : !contractId
+                  ? 'Select a contract'
+                  : 'Create Order'}
+            </Button>
             <Button type="button" variant="outline" onClick={() => navigate('/hotel/orders')}>
               Cancel
             </Button>
