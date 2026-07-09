@@ -22,7 +22,9 @@ function now(): string {
 const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   draft: ['scheduled', 'cancelled'],
   scheduled: ['ready_to_deliver', 'cancelled'],
-  ready_to_deliver: ['cancelled'],
+  ready_to_deliver: ['in_transit', 'delivered', 'cancelled'],
+  in_transit: ['delivered', 'cancelled'],
+  delivered: [],
   cancelled: [],
 }
 

@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import './index.css'
 import LoginPage from './pages/auth/login.tsx'
 import HotelLayout from './layouts/hotel-layout.tsx'
@@ -27,6 +27,12 @@ import HotelOrderFormPage from './pages/orders/hotel-order-form.tsx'
 import HotelOrderDetailPage from './pages/orders/hotel-order-detail.tsx'
 import FactoryOrderListPage from './pages/orders/factory-order-list.tsx'
 import FactoryOrderDetailPage from './pages/orders/factory-order-detail.tsx'
+import DriverLayout from './layouts/driver-layout.tsx'
+import DriverDashboard from './pages/driver/driver-dashboard.tsx'
+import DriverTasks from './pages/driver/driver-tasks.tsx'
+import DriverScan from './pages/driver/driver-scan.tsx'
+import DriverDeliveryProof from './pages/driver/driver-delivery-proof.tsx'
+import DriverProfile from './pages/driver/driver-profile.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -78,6 +84,19 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/factory/orders" element={<FactoryOrderListPage />} />
               <Route path="/factory/orders/:id" element={<FactoryOrderDetailPage />} />
             </Route>
+          </Route>
+        </Route>
+        <Route
+          element={<ProtectedRoute allowedScopes={['driver']} />}
+        >
+          <Route element={<DriverLayout />}>
+            <Route path="/driver/dashboard" element={<DriverDashboard />} />
+            <Route path="/driver/tasks" element={<DriverTasks />} />
+            <Route path="/driver/scan" element={<DriverScan />} />
+            <Route path="/driver/scan/:orderId" element={<DriverScan />} />
+            <Route path="/driver/delivery-proof/:orderId" element={<DriverDeliveryProof />} />
+            <Route path="/driver/profile" element={<DriverProfile />} />
+            <Route path="/driver" element={<Navigate to="/driver/dashboard" replace />} />
           </Route>
         </Route>
         <Route path="*" element={<NotFoundPage />} />

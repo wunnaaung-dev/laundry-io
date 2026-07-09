@@ -33,6 +33,8 @@ const ORDER_LABELS: Record<OrderStatus, string> = {
   draft: 'Draft',
   scheduled: 'Scheduled',
   ready_to_deliver: 'Ready to Deliver',
+  in_transit: 'In Transit',
+  delivered: 'Delivered',
   cancelled: 'Cancelled',
 }
 

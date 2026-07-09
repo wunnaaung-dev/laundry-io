@@ -141,14 +141,31 @@ const DEFAULT_USERS: StoredUser[] = [
     createdAt: now(),
     updatedAt: now(),
   },
+  {
+    id: 'default-driver-user',
+    email: 'driver@laundry.com',
+    password: 'driver123',
+    name: 'Driver User',
+    role: 'driver',
+    roleLevelId: DRIVER_ROLE_ID,
+    isDeleted: false,
+    createdAt: now(),
+    updatedAt: now(),
+  },
 ]
 
-function appendSeed(state: RoleState): RoleState {
-  if (state.roleLevels.length === 0) {
-    state.roleLevels = DEFAULT_ROLE_LEVELS
+function ensureDefaults(state: RoleState): RoleState {
+  const existingRoleIds = new Set(state.roleLevels.map((r) => r.id))
+  for (const rl of DEFAULT_ROLE_LEVELS) {
+    if (!existingRoleIds.has(rl.id)) {
+      state.roleLevels.push(rl)
+    }
   }
-  if (state.users.length === 0) {
-    state.users = DEFAULT_USERS
+  const existingUserIds = new Set(state.users.map((u) => u.id))
+  for (const u of DEFAULT_USERS) {
+    if (!existingUserIds.has(u.id)) {
+      state.users.push(u)
+    }
   }
   return state
 }
@@ -221,7 +238,7 @@ export const useRoleStore = create<RoleState>()(
     }),
     {
       name: 'laundry-role-store',
-      merge: (persisted, current) => appendSeed({ ...current, ...(persisted as Partial<RoleState>) }),
+      merge: (persisted, current) => ensureDefaults({ ...current, ...(persisted as Partial<RoleState>) }),
     },
   ),
 )

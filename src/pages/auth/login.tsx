@@ -33,6 +33,8 @@ export default function LoginPage() {
     const role = useAuthStore.getState().user?.role
     if (role === 'hotel_super_admin') {
       navigate('/hotel/dashboard')
+    } else if (role === 'driver') {
+      navigate('/driver/dashboard')
     } else {
       navigate('/factory/dashboard')
     }
@@ -79,7 +81,7 @@ export default function LoginPage() {
               Sign in
             </Button>
             <p className="text-xs text-muted-foreground text-center">
-              Hotel: hotel@admin.com / Factory: factory@admin.com
+              Hotel: hotel@admin.com / Factory: factory@admin.com / Driver: driver@laundry.com
             </p>
           </CardFooter>
         </form>
