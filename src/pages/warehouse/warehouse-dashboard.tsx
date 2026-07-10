@@ -1,5 +1,8 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Button } from '@/components/ui/button.tsx'
 import { Badge } from '@/components/ui/badge.tsx'
+import { LayoutGrid } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -27,6 +30,8 @@ export default function WarehouseDashboardPage() {
   const returns = useWarehouseStore((s) => s.returns)
   const getLowStockItems = useWarehouseStore((s) => s.getLowStockItems)
 
+  const navigate = useNavigate()
+
   const lowStockItems = getLowStockItems()
   const pendingReceiving = receivingRecords.filter((r) => r.status === 'pending')
   const pendingReturns = returns.filter((r) => r.status === 'pending')
@@ -40,7 +45,13 @@ export default function WarehouseDashboardPage() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Warehouse Dashboard</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Warehouse Dashboard</CardTitle>
+            <Button variant="outline" onClick={() => navigate('/factory/warehouse/storage')}>
+              <LayoutGrid className="mr-2 h-4 w-4" />
+              Storage Map
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-4">

@@ -13,6 +13,21 @@ export const CATEGORY_LABELS: Record<WarehouseItemCategory, string> = {
   other: 'Other',
 }
 
+export const ZONE_TYPE_LABELS: Record<string, string> = {
+  shelf: 'Shelf',
+  rack: 'Rack',
+  floor: 'Floor',
+  bin: 'Bin',
+  cold_storage: 'Cold Storage',
+}
+
+export const HAZARDOUS_CATEGORIES: ReadonlySet<WarehouseItemCategory> = new Set([
+  'chemical',
+  'bleach',
+  'detergent',
+  'softener',
+])
+
 export const CATEGORY_VARIANTS: Record<WarehouseItemCategory, 'default' | 'secondary' | 'outline' | 'destructive'> = {
   chemical: 'destructive',
   detergent: 'default',

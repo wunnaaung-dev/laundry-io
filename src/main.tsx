@@ -36,8 +36,22 @@ import WarehouseReturnsPage from './pages/warehouse/warehouse-returns.tsx'
 import WarehouseEquipmentPage from './pages/warehouse/warehouse-equipment.tsx'
 import WarehouseEquipmentFormPage from './pages/warehouse/warehouse-equipment-form.tsx'
 import WarehouseStoragePage from './pages/warehouse/warehouse-storage.tsx'
+import WarehouseZoneDetailPage from './pages/warehouse/warehouse-zone-detail.tsx'
 import WarehouseTransactionsPage from './pages/warehouse/warehouse-transactions.tsx'
 import WarehouseProductionPage from './pages/warehouse/warehouse-production.tsx'
+import WarehouseListPage from './pages/warehouse/warehouse-list.tsx'
+import WarehouseFormPage from './pages/warehouse/warehouse-form.tsx'
+import WarehouseDetailPage from './pages/warehouse/warehouse-detail.tsx'
+import { TooltipProvider } from '@/components/ui/tooltip.tsx'
+import HotelWarehouseDashboard from './pages/hotel-warehouse/hotel-warehouse-dashboard.tsx'
+import HotelLinenInventory from './pages/hotel-warehouse/linen-inventory.tsx'
+import HotelLinenScan from './pages/hotel-warehouse/linen-scan.tsx'
+import HotelParLevels from './pages/hotel-warehouse/par-levels.tsx'
+import HotelStandingOrders from './pages/hotel-warehouse/standing-orders.tsx'
+import HotelRejectLog from './pages/hotel-warehouse/reject-log.tsx'
+import HotelStoragePage from './pages/hotel-warehouse/hotel-storage.tsx'
+import HotelZoneDetailPage from './pages/hotel-warehouse/hotel-zone-detail.tsx'
+import HotelMovementLogPage from './pages/hotel-warehouse/hotel-movement-log.tsx'
 import DriverLayout from './layouts/driver-layout.tsx'
 import DriverDashboard from './pages/driver/driver-dashboard.tsx'
 import DriverTasks from './pages/driver/driver-tasks.tsx'
@@ -48,6 +62,7 @@ import DriverProfile from './pages/driver/driver-profile.tsx'
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
+      <TooltipProvider>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route
@@ -68,6 +83,15 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/hotel/orders/new" element={<HotelOrderFormPage />} />
               <Route path="/hotel/orders/:id" element={<HotelOrderDetailPage />} />
             </Route>
+            <Route path="/hotel/warehouse" element={<HotelWarehouseDashboard />} />
+            <Route path="/hotel/warehouse/linen-inventory" element={<HotelLinenInventory />} />
+            <Route path="/hotel/warehouse/linen-scan" element={<HotelLinenScan />} />
+            <Route path="/hotel/warehouse/par-levels" element={<HotelParLevels />} />
+            <Route path="/hotel/warehouse/standing-orders" element={<HotelStandingOrders />} />
+            <Route path="/hotel/warehouse/reject-log" element={<HotelRejectLog />} />
+            <Route path="/hotel/warehouse/storage" element={<HotelStoragePage />} />
+            <Route path="/hotel/warehouse/storage/movements" element={<HotelMovementLogPage />} />
+            <Route path="/hotel/warehouse/zones/:zoneId" element={<HotelZoneDetailPage />} />
           </Route>
         </Route>
         <Route
@@ -97,6 +121,10 @@ createRoot(document.getElementById('root')!).render(
             </Route>
             <Route element={<ProtectedRoute requiredModule="warehouse" />}>
               <Route path="/factory/warehouse" element={<WarehouseDashboardPage />} />
+              <Route path="/factory/warehouse/manage" element={<WarehouseListPage />} />
+              <Route path="/factory/warehouse/manage/new" element={<WarehouseFormPage />} />
+              <Route path="/factory/warehouse/manage/:id" element={<WarehouseDetailPage />} />
+              <Route path="/factory/warehouse/manage/:id/edit" element={<WarehouseFormPage />} />
               <Route path="/factory/warehouse/inventory" element={<WarehouseInventoryPage />} />
               <Route path="/factory/warehouse/inventory/new" element={<WarehouseInventoryFormPage />} />
               <Route path="/factory/warehouse/inventory/:id/edit" element={<WarehouseInventoryFormPage />} />
@@ -107,6 +135,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/factory/warehouse/equipment/new" element={<WarehouseEquipmentFormPage />} />
               <Route path="/factory/warehouse/equipment/:id/edit" element={<WarehouseEquipmentFormPage />} />
               <Route path="/factory/warehouse/storage" element={<WarehouseStoragePage />} />
+              <Route path="/factory/warehouse/zones/:zoneId" element={<WarehouseZoneDetailPage />} />
               <Route path="/factory/warehouse/transactions" element={<WarehouseTransactionsPage />} />
               <Route path="/factory/warehouse/production" element={<WarehouseProductionPage />} />
             </Route>
@@ -127,6 +156,7 @@ createRoot(document.getElementById('root')!).render(
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      </TooltipProvider>
     </BrowserRouter>
   </StrictMode>,
 )

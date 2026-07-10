@@ -1,8 +1,11 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type {
+  Warehouse,
   WarehouseItem,
   WarehouseItemCategory,
+  WarehouseZone,
+  WarehouseZoneType,
   StockTransaction,
   ReturnRecord,
   ReceivingRecord,
@@ -10,6 +13,9 @@ import type {
   StockTransactionType,
   ReturnAction,
   ReturnStatus,
+  WarehouseFunction,
+  WarehouseZoneCategory,
+  WarehouseStatus,
 } from '../types/warehouse.ts'
 
 function makeId(): string {
@@ -21,7 +27,9 @@ function now(): string {
 }
 
 interface WarehouseState {
+  warehouses: Warehouse[]
   items: WarehouseItem[]
+  warehouseZones: WarehouseZone[]
   transactions: StockTransaction[]
   returns: ReturnRecord[]
   receivingRecords: ReceivingRecord[]
@@ -36,6 +44,8 @@ interface WarehouseState {
     unit: string
     minStockLevel: number
     location: string
+    zoneId?: string
+    capacityUnits: number
     supplierInfo: string
     sdsUrl: string
     expiryDate: string
@@ -52,6 +62,8 @@ interface WarehouseState {
       unit: string
       minStockLevel: number
       location: string
+      zoneId: string
+      capacityUnits: number
       supplierInfo: string
       sdsUrl: string
       expiryDate: string
@@ -60,6 +72,16 @@ interface WarehouseState {
   ) => void
 
   deleteItem: (id: string) => void
+
+  addZone: (data: {
+    name: string
+    capacityUnits: number
+    type: WarehouseZoneType
+  }) => string
+
+  updateZone: (id: string, data: Partial<WarehouseZone>) => void
+
+  deleteZone: (id: string) => void
 
   recordTransaction: (data: {
     itemId: string
@@ -115,7 +137,76 @@ interface WarehouseState {
   ) => void
 
   deleteEquipment: (id: string) => void
+
+  addWarehouse: (data: {
+    warehouseCode: string
+    name: string
+    siteId?: string
+    status?: WarehouseStatus
+    address?: { label: string; address: string }
+    enabledFunctions?: WarehouseFunction[]
+    enabledZones?: WarehouseZoneCategory[]
+    notes?: string
+  }) => void
+
+  updateWarehouse: (id: string, data: Partial<Warehouse>) => void
+
+  deleteWarehouse: (id: string) => void
 }
+
+function migrateLocationsToZones(
+  items: WarehouseItem[],
+  existingZones: WarehouseZone[],
+): { zones: WarehouseZone[]; updatedItems: WarehouseItem[] } {
+  const zones = [...existingZones]
+  const zoneMap = new Map(zones.map((z) => [z.name, z]))
+  const updatedItems = items.map((item) => {
+    if (item.zoneId) return item
+    const location = item.location || 'Unassigned'
+    let zone = zoneMap.get(location)
+    if (!zone) {
+      zone = {
+        id: makeId(),
+        name: location,
+        capacityUnits: 100,
+        type: 'shelf',
+      }
+      zones.push(zone)
+      zoneMap.set(location, zone)
+    }
+    return { ...item, zoneId: zone.id, capacityUnits: item.capacityUnits ?? 1 }
+  })
+  return { zones, updatedItems }
+}
+
+const DEFAULT_WAREHOUSE: Warehouse = {
+  id: 'wh-main-factory',
+  warehouseCode: 'WH-MAIN-001',
+  name: 'Main Factory Warehouse',
+  siteId: 'main-factory',
+  status: 'active',
+  address: { label: 'Main Site', address: '123 Factory Road, Industrial Zone' },
+  enabledFunctions: ['receiving', 'storage', 'inventoryManagement', 'production', 'dispatch'],
+  enabledZones: ['consumable-chemical', 'facilities-utilities', 'linen-processing', 'packaging-shipping'],
+  notes: 'Primary warehouse for all factory operations.',
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+}
+
+const SEED_ZONES: WarehouseZone[] = [
+  { id: 'zone-a1', name: 'Aisle A - Shelf 1', capacityUnits: 100, type: 'shelf' },
+  { id: 'zone-a2', name: 'Aisle A - Shelf 2', capacityUnits: 100, type: 'shelf' },
+  { id: 'zone-a3', name: 'Aisle A - Shelf 3', capacityUnits: 100, type: 'shelf' },
+  { id: 'zone-a4', name: 'Aisle A - Shelf 4', capacityUnits: 100, type: 'shelf' },
+  { id: 'zone-b1', name: 'Aisle B - Shelf 1', capacityUnits: 100, type: 'shelf' },
+  { id: 'zone-b2', name: 'Aisle B - Shelf 2', capacityUnits: 100, type: 'shelf' },
+  { id: 'zone-b3', name: 'Aisle B - Shelf 3', capacityUnits: 100, type: 'shelf' },
+  { id: 'zone-b4', name: 'Aisle B - Shelf 4', capacityUnits: 100, type: 'shelf' },
+  { id: 'zone-c1', name: 'Aisle C - Shelf 1', capacityUnits: 100, type: 'shelf' },
+  { id: 'zone-c2', name: 'Aisle C - Shelf 2', capacityUnits: 100, type: 'shelf' },
+  { id: 'zone-c3', name: 'Aisle C - Shelf 3', capacityUnits: 100, type: 'shelf' },
+  { id: 'zone-c4', name: 'Aisle C - Shelf 4', capacityUnits: 100, type: 'shelf' },
+]
 
 const SEED_ITEMS: WarehouseItem[] = [
   {
@@ -127,6 +218,8 @@ const SEED_ITEMS: WarehouseItem[] = [
     unit: 'L',
     minStockLevel: 20,
     location: 'Aisle A - Shelf 1',
+    zoneId: 'zone-a1',
+    capacityUnits: 1,
     supplierInfo: 'ChemCo Ltd.',
     sdsUrl: '',
     expiryDate: '2027-06-01',
@@ -143,6 +236,8 @@ const SEED_ITEMS: WarehouseItem[] = [
     unit: 'L',
     minStockLevel: 15,
     location: 'Aisle A - Shelf 2',
+    zoneId: 'zone-a2',
+    capacityUnits: 1,
     supplierInfo: 'ChemCo Ltd.',
     sdsUrl: '',
     expiryDate: '2026-12-01',
@@ -159,6 +254,8 @@ const SEED_ITEMS: WarehouseItem[] = [
     unit: 'L',
     minStockLevel: 10,
     location: 'Aisle A - Shelf 3',
+    zoneId: 'zone-a3',
+    capacityUnits: 1,
     supplierInfo: 'SoftChem Inc.',
     sdsUrl: '',
     expiryDate: '2027-03-01',
@@ -175,6 +272,8 @@ const SEED_ITEMS: WarehouseItem[] = [
     unit: 'kg',
     minStockLevel: 10,
     location: 'Aisle A - Shelf 4',
+    zoneId: 'zone-a4',
+    capacityUnits: 1,
     supplierInfo: 'StainAway Corp.',
     sdsUrl: '',
     expiryDate: '2026-09-15',
@@ -191,6 +290,8 @@ const SEED_ITEMS: WarehouseItem[] = [
     unit: 'pcs',
     minStockLevel: 100,
     location: 'Aisle B - Shelf 1',
+    zoneId: 'zone-b1',
+    capacityUnits: 1,
     supplierInfo: 'PackPro Supplies',
     sdsUrl: '',
     expiryDate: '',
@@ -207,6 +308,8 @@ const SEED_ITEMS: WarehouseItem[] = [
     unit: 'pcs',
     minStockLevel: 200,
     location: 'Aisle B - Shelf 2',
+    zoneId: 'zone-b2',
+    capacityUnits: 1,
     supplierInfo: 'PackPro Supplies',
     sdsUrl: '',
     expiryDate: '',
@@ -223,6 +326,8 @@ const SEED_ITEMS: WarehouseItem[] = [
     unit: 'pcs',
     minStockLevel: 50,
     location: 'Aisle B - Shelf 3',
+    zoneId: 'zone-b3',
+    capacityUnits: 1,
     supplierInfo: 'BoxMakers Inc.',
     sdsUrl: '',
     expiryDate: '',
@@ -239,6 +344,8 @@ const SEED_ITEMS: WarehouseItem[] = [
     unit: 'roll',
     minStockLevel: 5,
     location: 'Aisle B - Shelf 4',
+    zoneId: 'zone-b4',
+    capacityUnits: 1,
     supplierInfo: 'PackPro Supplies',
     sdsUrl: '',
     expiryDate: '',
@@ -255,6 +362,8 @@ const SEED_ITEMS: WarehouseItem[] = [
     unit: 'pcs',
     minStockLevel: 6,
     location: 'Aisle C - Shelf 1',
+    zoneId: 'zone-c1',
+    capacityUnits: 1,
     supplierInfo: 'LaundryTech Parts',
     sdsUrl: '',
     expiryDate: '',
@@ -271,6 +380,8 @@ const SEED_ITEMS: WarehouseItem[] = [
     unit: 'pcs',
     minStockLevel: 5,
     location: 'Aisle C - Shelf 2',
+    zoneId: 'zone-c2',
+    capacityUnits: 1,
     supplierInfo: 'LaundryTech Parts',
     sdsUrl: '',
     expiryDate: '',
@@ -287,6 +398,8 @@ const SEED_ITEMS: WarehouseItem[] = [
     unit: 'pcs',
     minStockLevel: 5,
     location: 'Aisle C - Shelf 3',
+    zoneId: 'zone-c3',
+    capacityUnits: 1,
     supplierInfo: 'CleanTools Co.',
     sdsUrl: '',
     expiryDate: '',
@@ -303,6 +416,8 @@ const SEED_ITEMS: WarehouseItem[] = [
     unit: 'roll',
     minStockLevel: 3,
     location: 'Aisle C - Shelf 4',
+    zoneId: 'zone-c4',
+    capacityUnits: 1,
     supplierInfo: 'DryerPro Supplies',
     sdsUrl: '',
     expiryDate: '',
@@ -424,7 +539,9 @@ const SEED_TRANSACTIONS: StockTransaction[] = [
 export const useWarehouseStore = create<WarehouseState>()(
   persist(
     (set, get) => ({
+      warehouses: [],
       items: [],
+      warehouseZones: [],
       transactions: [],
       returns: [],
       receivingRecords: [],
@@ -432,38 +549,80 @@ export const useWarehouseStore = create<WarehouseState>()(
       initialized: false,
 
       addItem: (data) =>
-        set((state) => ({
-          items: [
-            ...state.items,
-            {
-              id: makeId(),
-              name: data.name,
-              sku: data.sku,
-              category: data.category,
-              currentStock: data.currentStock,
-              unit: data.unit,
-              minStockLevel: data.minStockLevel,
-              location: data.location,
-              supplierInfo: data.supplierInfo,
-              sdsUrl: data.sdsUrl,
-              expiryDate: data.expiryDate,
-              notes: data.notes,
-              createdAt: now(),
-              updatedAt: now(),
-            },
-          ],
-        })),
+        set((state) => {
+          const zone = data.zoneId
+            ? state.warehouseZones.find((z) => z.id === data.zoneId)
+            : undefined
+          return {
+            items: [
+              ...state.items,
+              {
+                id: makeId(),
+                name: data.name,
+                sku: data.sku,
+                category: data.category,
+                currentStock: data.currentStock,
+                unit: data.unit,
+                minStockLevel: data.minStockLevel,
+                location: zone ? zone.name : data.location,
+                zoneId: data.zoneId,
+                capacityUnits: data.capacityUnits,
+                supplierInfo: data.supplierInfo,
+                sdsUrl: data.sdsUrl,
+                expiryDate: data.expiryDate,
+                notes: data.notes,
+                createdAt: now(),
+                updatedAt: now(),
+              },
+            ],
+          }
+        }),
 
       updateItem: (id, data) =>
         set((state) => ({
-          items: state.items.map((i) =>
-            i.id === id ? { ...i, ...data, updatedAt: now() } : i,
-          ),
+          items: state.items.map((i) => {
+            if (i.id !== id) return i
+            const zone = data.zoneId
+              ? state.warehouseZones.find((z) => z.id === data.zoneId)
+              : undefined
+            return {
+              ...i,
+              ...data,
+              location: zone ? zone.name : (data.location ?? i.location),
+              updatedAt: now(),
+            }
+          }),
         })),
 
       deleteItem: (id) =>
         set((state) => ({
           items: state.items.filter((i) => i.id !== id),
+        })),
+
+      addZone: (data) => {
+        const id = makeId()
+        set((state) => ({
+          warehouseZones: [
+            ...state.warehouseZones,
+            { id, ...data },
+          ],
+        }))
+        return id
+      },
+
+      updateZone: (id, data) =>
+        set((state) => ({
+          warehouseZones: state.warehouseZones.map((z) =>
+            z.id === id ? { ...z, ...data } : z,
+          ),
+        })),
+
+      deleteZone: (id) =>
+        set((state) => ({
+          warehouseZones: state.warehouseZones.filter((z) => z.id !== id),
+          items: state.items.map((i) =>
+            i.zoneId === id ? { ...i, zoneId: undefined } : i,
+          ),
         })),
 
       recordTransaction: (data) => {
@@ -585,24 +744,71 @@ export const useWarehouseStore = create<WarehouseState>()(
         set((state) => ({
           equipment: state.equipment.filter((e) => e.id !== id),
         })),
+
+      addWarehouse: (data) =>
+        set((state) => ({
+          warehouses: [
+            ...state.warehouses,
+            {
+              id: makeId(),
+              warehouseCode: data.warehouseCode,
+              name: data.name,
+              siteId: data.siteId ?? 'main-factory',
+              status: data.status ?? 'active',
+              address: data.address ?? { label: '', address: '' },
+              enabledFunctions: data.enabledFunctions ?? ['receiving', 'storage', 'inventoryManagement'],
+              enabledZones: data.enabledZones ?? ['consumable-chemical', 'facilities-utilities'],
+              notes: data.notes ?? '',
+              createdAt: now(),
+              updatedAt: now(),
+            },
+          ],
+        })),
+
+      updateWarehouse: (id, data) =>
+        set((state) => ({
+          warehouses: state.warehouses.map((w) =>
+            w.id === id ? { ...w, ...data, updatedAt: now() } : w,
+          ),
+        })),
+
+      deleteWarehouse: (id) =>
+        set((state) => ({
+          warehouses: state.warehouses.filter((w) => w.id !== id),
+        })),
     }),
     {
       name: 'laundry-warehouse-store',
-      version: 1,
-      migrate: () => ({
-        items: [],
-        transactions: [],
-        returns: [],
-        receivingRecords: [],
-        equipment: [],
-        initialized: false,
-      }),
+      version: 3,
+      migrate: (persisted: unknown) => {
+        const data = persisted as Partial<WarehouseState>
+        const items = (data.items ?? []).map((item) => ({
+          ...item,
+          capacityUnits: item.capacityUnits ?? 1,
+        }))
+        const { zones, updatedItems } = migrateLocationsToZones(
+          items,
+          data.warehouseZones ?? [],
+        )
+        return {
+          warehouses: data.warehouses ?? [],
+          items: updatedItems,
+          warehouseZones: zones,
+          transactions: data.transactions ?? [],
+          returns: data.returns ?? [],
+          receivingRecords: data.receivingRecords ?? [],
+          equipment: data.equipment ?? [],
+          initialized: data.initialized ?? false,
+        }
+      },
       merge: (persisted, current) => ({
         ...current,
         ...(persisted as Partial<WarehouseState>),
       }),
       onRehydrateStorage: () => (state) => {
         if (state && !state.initialized) {
+          state.warehouses = [DEFAULT_WAREHOUSE]
+          state.warehouseZones = SEED_ZONES
           state.items = SEED_ITEMS
           state.equipment = SEED_EQUIPMENT
           state.transactions = SEED_TRANSACTIONS

@@ -1,43 +1,102 @@
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table.tsx'
+import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Button } from '@/components/ui/button.tsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx'
 import { useWarehouseStore } from '@/stores/warehouse-store.ts'
-import { CATEGORY_LABELS, CATEGORY_VARIANTS } from './constants.ts'
+import type { WarehouseItem } from '@/types/warehouse.ts'
+import { Warehouse } from 'lucide-react'
+import ZoneCard from './zone-card.tsx'
+import ZoneManageDialog from './zone-manage-dialog.tsx'
 
-const MAX_ITEMS_PER_ZONE = 5
-
-function getOccupancyColor(count: number): string {
-  const ratio = count / MAX_ITEMS_PER_ZONE
-  if (ratio >= 0.8) return 'border-red-500 bg-red-50 dark:bg-red-950/20'
-  if (ratio >= 0.5) return 'border-amber-500 bg-amber-50 dark:bg-amber-950/20'
-  return 'border-green-500 bg-green-50 dark:bg-green-950/20'
+interface ZoneWithItems {
+  zoneId: string
+  zoneName: string
+  items: WarehouseItem[]
+  usedCapacity: number
+  capacityUnits: number
+  occupancyRatio: number
 }
 
 export default function WarehouseStoragePage() {
+  const navigate = useNavigate()
   const items = useWarehouseStore((s) => s.items)
+  const zones = useWarehouseStore((s) => s.warehouseZones)
 
-  const zones = items.reduce<Record<string, typeof items>>((acc, item) => {
-    const zone = item.location || 'Unassigned'
-    if (!acc[zone]) acc[zone] = []
-    acc[zone].push(item)
-    return acc
-  }, {})
+  const zoneEntries = useMemo<ZoneWithItems[]>(() => {
+    const zoneMap = new Map<string, WarehouseItem[]>()
+    const fallbackItems: WarehouseItem[] = []
 
-  const zoneEntries = Object.entries(zones).sort(
-    ([, a], [, b]) => b.length - a.length,
-  )
+    for (const item of items) {
+      if (item.zoneId) {
+        const existing = zoneMap.get(item.zoneId)
+        if (existing) existing.push(item)
+        else zoneMap.set(item.zoneId, [item])
+      } else {
+        fallbackItems.push(item)
+      }
+    }
+
+    const result: ZoneWithItems[] = []
+
+    for (const zone of zones) {
+      const zoneItems = zoneMap.get(zone.id) ?? []
+      const used = zoneItems.reduce(
+        (sum, i) => sum + i.currentStock * (i.capacityUnits ?? 1),
+        0,
+      )
+      result.push({
+        zoneId: zone.id,
+        zoneName: zone.name,
+        items: zoneItems,
+        usedCapacity: used,
+        capacityUnits: zone.capacityUnits,
+        occupancyRatio:
+          zone.capacityUnits > 0
+            ? Math.min(used / zone.capacityUnits, 1)
+            : 0,
+      })
+    }
+
+    if (fallbackItems.length > 0) {
+      const fallbackGroups = new Map<string, WarehouseItem[]>()
+      for (const item of fallbackItems) {
+        const loc = item.location || 'Unassigned'
+        const existing = fallbackGroups.get(loc)
+        if (existing) existing.push(item)
+        else fallbackGroups.set(loc, [item])
+      }
+      for (const [loc, locItems] of fallbackGroups) {
+        const used = locItems.reduce(
+          (sum, i) => sum + i.currentStock * (i.capacityUnits ?? 1),
+          0,
+        )
+        result.push({
+          zoneId: loc,
+          zoneName: loc,
+          items: locItems,
+          usedCapacity: used,
+          capacityUnits: 100,
+          occupancyRatio: Math.min(used / 100, 1),
+        })
+      }
+    }
+
+    return result.sort((a, b) => a.zoneName.localeCompare(b.zoneName))
+  }, [items, zones])
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Storage Map</CardTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={() => navigate('/factory/warehouse')}>
+                <Warehouse className="h-4 w-4" />
+              </Button>
+              <CardTitle>Storage Zones</CardTitle>
+            </div>
+            <ZoneManageDialog />
+          </div>
         </CardHeader>
         <CardContent>
           {zoneEntries.length === 0 ? (
@@ -46,102 +105,18 @@ export default function WarehouseStoragePage() {
             </p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {zoneEntries.map(([zone, zoneItems]) => (
-                <Card
-                  key={zone}
-                  className={`border-l-4 ${getOccupancyColor(zoneItems.length)}`}
-                >
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm font-semibold">
-                        {zone}
-                      </CardTitle>
-                      <span className="text-xs text-muted-foreground">
-                        {zoneItems.length} / {MAX_ITEMS_PER_ZONE}
-                      </span>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-1">
-                      {zoneItems.map((item) => (
-                        <span
-                          key={item.id}
-                          className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs"
-                        >
-                          <span
-                            className={`size-1.5 rounded-full ${
-                              item.currentStock <= item.minStockLevel
-                                ? 'bg-red-500'
-                                : 'bg-green-500'
-                            }`}
-                          />
-                          {item.name} ({item.currentStock}
-                          {item.unit})
-                        </span>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Zone Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {zoneEntries.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No zones to display.
-            </p>
-          ) : (
-            <div className="space-y-6">
-              {zoneEntries.map(([zone, zoneItems]) => (
-                <div key={zone}>
-                  <h3 className="text-sm font-semibold mb-2">{zone}</h3>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>SKU</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Stock</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {zoneItems.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium">
-                            {item.name}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {item.sku}
-                          </TableCell>
-                          <TableCell>
-                            <span
-                              className={`rounded-md border px-2 py-0.5 text-xs ${
-                                CATEGORY_VARIANTS[item.category] === 'destructive'
-                                  ? 'border-red-300 text-red-600'
-                                  : CATEGORY_VARIANTS[item.category] === 'default'
-                                    ? 'border-blue-300 text-blue-600'
-                                    : 'border-gray-300 text-muted-foreground'
-                              }`}
-                            >
-                              {CATEGORY_LABELS[item.category]}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            {item.currentStock}
-                            {item.unit}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+              {zoneEntries.map((entry) => (
+                <ZoneCard
+                  key={entry.zoneId}
+                  zone={{
+                    id: entry.zoneId,
+                    name: entry.zoneName,
+                    capacityUnits: entry.capacityUnits,
+                    type: 'shelf',
+                  }}
+                  items={entry.items}
+                  occupancyRatio={entry.occupancyRatio}
+                />
               ))}
             </div>
           )}

@@ -1,3 +1,32 @@
+export type WarehouseStatus = 'active' | 'inactive' | 'maintenance'
+
+export type WarehouseFunction =
+  | 'receiving'
+  | 'storage'
+  | 'inventoryManagement'
+  | 'production'
+  | 'dispatch'
+
+export type WarehouseZoneCategory =
+  | 'consumable-chemical'
+  | 'facilities-utilities'
+  | 'linen-processing'
+  | 'packaging-shipping'
+
+export interface Warehouse {
+  id: string
+  warehouseCode: string
+  name: string
+  siteId: string
+  status: WarehouseStatus
+  address: { label: string; address: string }
+  enabledFunctions: WarehouseFunction[]
+  enabledZones: WarehouseZoneCategory[]
+  notes: string
+  createdAt: string
+  updatedAt: string
+}
+
 export type WarehouseItemCategory =
   | 'chemical'
   | 'detergent'
@@ -18,6 +47,15 @@ export type ReturnStatus = 'pending' | 'resolved'
 
 export type ReceivingStatus = 'pending' | 'completed'
 
+export type WarehouseZoneType = 'shelf' | 'rack' | 'floor' | 'bin' | 'cold_storage'
+
+export interface WarehouseZone {
+  id: string
+  name: string
+  capacityUnits: number
+  type: WarehouseZoneType
+}
+
 export interface WarehouseItem {
   id: string
   name: string
@@ -27,6 +65,8 @@ export interface WarehouseItem {
   unit: string
   minStockLevel: number
   location: string
+  zoneId?: string
+  capacityUnits: number
   supplierInfo: string
   sdsUrl: string
   expiryDate: string

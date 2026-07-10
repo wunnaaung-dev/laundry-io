@@ -20,6 +20,9 @@ const navItems = [
   { title: 'Linen Tracking', url: '/hotel/linen-tracking' },
   { title: 'Invoices', url: '/hotel/invoices' },
   { title: 'Reports', url: '/hotel/reports' },
+  { title: 'Hotel Warehouse', url: '/hotel/warehouse' },
+  { title: 'Storage', url: '/hotel/warehouse/storage' },
+  { title: 'Movement Log', url: '/hotel/warehouse/storage/movements' },
 ]
 
 const adminItems = [
