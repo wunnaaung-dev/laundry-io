@@ -11,20 +11,6 @@
       "type": "local",
       "command": ["npx", "shadcn@latest", "mcp"],
       "enabled": true
-    },
-    "github": {
-      "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-e",
-        "GITHUB_PERSONAL_ACCESS_TOKEN",
-        "ghcr.io/github/github-mcp-server"
-      ],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "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"
-      }
     }
   }
 }

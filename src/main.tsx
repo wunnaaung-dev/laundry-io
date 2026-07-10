@@ -27,6 +27,17 @@ import HotelOrderFormPage from './pages/orders/hotel-order-form.tsx'
 import HotelOrderDetailPage from './pages/orders/hotel-order-detail.tsx'
 import FactoryOrderListPage from './pages/orders/factory-order-list.tsx'
 import FactoryOrderDetailPage from './pages/orders/factory-order-detail.tsx'
+import WarehouseDashboardPage from './pages/warehouse/warehouse-dashboard.tsx'
+import WarehouseInventoryPage from './pages/warehouse/warehouse-inventory.tsx'
+import WarehouseInventoryFormPage from './pages/warehouse/warehouse-inventory-form.tsx'
+import WarehouseReceivingPage from './pages/warehouse/warehouse-receiving.tsx'
+import WarehouseReceivingFormPage from './pages/warehouse/warehouse-receiving-form.tsx'
+import WarehouseReturnsPage from './pages/warehouse/warehouse-returns.tsx'
+import WarehouseEquipmentPage from './pages/warehouse/warehouse-equipment.tsx'
+import WarehouseEquipmentFormPage from './pages/warehouse/warehouse-equipment-form.tsx'
+import WarehouseStoragePage from './pages/warehouse/warehouse-storage.tsx'
+import WarehouseTransactionsPage from './pages/warehouse/warehouse-transactions.tsx'
+import WarehouseProductionPage from './pages/warehouse/warehouse-production.tsx'
 import DriverLayout from './layouts/driver-layout.tsx'
 import DriverDashboard from './pages/driver/driver-dashboard.tsx'
 import DriverTasks from './pages/driver/driver-tasks.tsx'
@@ -83,6 +94,21 @@ createRoot(document.getElementById('root')!).render(
             <Route element={<ProtectedRoute requiredModule="order_management" />}>
               <Route path="/factory/orders" element={<FactoryOrderListPage />} />
               <Route path="/factory/orders/:id" element={<FactoryOrderDetailPage />} />
+            </Route>
+            <Route element={<ProtectedRoute requiredModule="warehouse" />}>
+              <Route path="/factory/warehouse" element={<WarehouseDashboardPage />} />
+              <Route path="/factory/warehouse/inventory" element={<WarehouseInventoryPage />} />
+              <Route path="/factory/warehouse/inventory/new" element={<WarehouseInventoryFormPage />} />
+              <Route path="/factory/warehouse/inventory/:id/edit" element={<WarehouseInventoryFormPage />} />
+              <Route path="/factory/warehouse/receiving" element={<WarehouseReceivingPage />} />
+              <Route path="/factory/warehouse/receiving/new" element={<WarehouseReceivingFormPage />} />
+              <Route path="/factory/warehouse/returns" element={<WarehouseReturnsPage />} />
+              <Route path="/factory/warehouse/equipment" element={<WarehouseEquipmentPage />} />
+              <Route path="/factory/warehouse/equipment/new" element={<WarehouseEquipmentFormPage />} />
+              <Route path="/factory/warehouse/equipment/:id/edit" element={<WarehouseEquipmentFormPage />} />
+              <Route path="/factory/warehouse/storage" element={<WarehouseStoragePage />} />
+              <Route path="/factory/warehouse/transactions" element={<WarehouseTransactionsPage />} />
+              <Route path="/factory/warehouse/production" element={<WarehouseProductionPage />} />
             </Route>
           </Route>
         </Route>

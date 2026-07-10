@@ -1,0 +1,614 @@
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+import type {
+  WarehouseItem,
+  WarehouseItemCategory,
+  StockTransaction,
+  ReturnRecord,
+  ReceivingRecord,
+  EquipmentRecord,
+  StockTransactionType,
+  ReturnAction,
+  ReturnStatus,
+} from '../types/warehouse.ts'
+
+function makeId(): string {
+  return crypto.randomUUID()
+}
+
+function now(): string {
+  return new Date().toISOString()
+}
+
+interface WarehouseState {
+  items: WarehouseItem[]
+  transactions: StockTransaction[]
+  returns: ReturnRecord[]
+  receivingRecords: ReceivingRecord[]
+  equipment: EquipmentRecord[]
+  initialized: boolean
+
+  addItem: (data: {
+    name: string
+    sku: string
+    category: WarehouseItemCategory
+    currentStock: number
+    unit: string
+    minStockLevel: number
+    location: string
+    supplierInfo: string
+    sdsUrl: string
+    expiryDate: string
+    notes: string
+  }) => void
+
+  updateItem: (
+    id: string,
+    data: Partial<{
+      name: string
+      sku: string
+      category: WarehouseItemCategory
+      currentStock: number
+      unit: string
+      minStockLevel: number
+      location: string
+      supplierInfo: string
+      sdsUrl: string
+      expiryDate: string
+      notes: string
+    }>,
+  ) => void
+
+  deleteItem: (id: string) => void
+
+  recordTransaction: (data: {
+    itemId: string
+    type: StockTransactionType
+    quantity: number
+    reference: string
+    notes: string
+    userId: string
+  }) => void
+
+  getLowStockItems: () => WarehouseItem[]
+
+  addReturn: (data: {
+    orderId: string
+    customerId: string
+    customerName: string
+    itemDescription: string
+    reason: string
+    condition: string
+    action: ReturnAction
+  }) => void
+
+  updateReturnStatus: (id: string, status: ReturnStatus) => void
+
+  addReceivingRecord: (data: {
+    supplier: string
+    poReference: string
+    items: { itemId: string; itemName: string; quantity: number }[]
+    receivedBy: string
+    notes: string
+  }) => void
+
+  completeReceiving: (id: string) => void
+
+  addEquipment: (data: {
+    name: string
+    category: WarehouseItemCategory
+    location: string
+    condition: 'new' | 'good' | 'fair' | 'poor'
+    notes: string
+  }) => void
+
+  updateEquipment: (
+    id: string,
+    data: Partial<{
+      name: string
+      category: WarehouseItemCategory
+      location: string
+      condition: 'new' | 'good' | 'fair' | 'poor'
+      lastMaintenanceDate: string
+      notes: string
+    }>,
+  ) => void
+
+  deleteEquipment: (id: string) => void
+}
+
+const SEED_ITEMS: WarehouseItem[] = [
+  {
+    id: 'wh-seed-1',
+    name: 'Industrial Liquid Detergent',
+    sku: 'CHM-DET-001',
+    category: 'detergent',
+    currentStock: 45,
+    unit: 'L',
+    minStockLevel: 20,
+    location: 'Aisle A - Shelf 1',
+    supplierInfo: 'ChemCo Ltd.',
+    sdsUrl: '',
+    expiryDate: '2027-06-01',
+    notes: 'Concentrated, use 50ml per 10kg load',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'wh-seed-2',
+    name: 'Chlorine Bleach',
+    sku: 'CHM-BLC-001',
+    category: 'bleach',
+    currentStock: 12,
+    unit: 'L',
+    minStockLevel: 15,
+    location: 'Aisle A - Shelf 2',
+    supplierInfo: 'ChemCo Ltd.',
+    sdsUrl: '',
+    expiryDate: '2026-12-01',
+    notes: 'Store in cool dry place away from acids',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'wh-seed-3',
+    name: 'Fabric Softener Concentrate',
+    sku: 'CHM-SFT-001',
+    category: 'softener',
+    currentStock: 30,
+    unit: 'L',
+    minStockLevel: 10,
+    location: 'Aisle A - Shelf 3',
+    supplierInfo: 'SoftChem Inc.',
+    sdsUrl: '',
+    expiryDate: '2027-03-01',
+    notes: '',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'wh-seed-4',
+    name: 'Oxygen-Based Stain Remover',
+    sku: 'CHM-STN-001',
+    category: 'chemical',
+    currentStock: 8,
+    unit: 'kg',
+    minStockLevel: 10,
+    location: 'Aisle A - Shelf 4',
+    supplierInfo: 'StainAway Corp.',
+    sdsUrl: '',
+    expiryDate: '2026-09-15',
+    notes: 'Low-temperature activated',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'wh-seed-5',
+    name: 'Packaging Poly Bags (Large)',
+    sku: 'PKG-BAG-L',
+    category: 'packaging',
+    currentStock: 500,
+    unit: 'pcs',
+    minStockLevel: 100,
+    location: 'Aisle B - Shelf 1',
+    supplierInfo: 'PackPro Supplies',
+    sdsUrl: '',
+    expiryDate: '',
+    notes: '60x80cm, clear',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'wh-seed-6',
+    name: 'Packaging Poly Bags (Small)',
+    sku: 'PKG-BAG-S',
+    category: 'packaging',
+    currentStock: 800,
+    unit: 'pcs',
+    minStockLevel: 200,
+    location: 'Aisle B - Shelf 2',
+    supplierInfo: 'PackPro Supplies',
+    sdsUrl: '',
+    expiryDate: '',
+    notes: '40x50cm, clear',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'wh-seed-7',
+    name: 'Cardboard Shipping Boxes',
+    sku: 'PKG-BOX-01',
+    category: 'packaging',
+    currentStock: 120,
+    unit: 'pcs',
+    minStockLevel: 50,
+    location: 'Aisle B - Shelf 3',
+    supplierInfo: 'BoxMakers Inc.',
+    sdsUrl: '',
+    expiryDate: '',
+    notes: '50x40x30cm, double-walled',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'wh-seed-8',
+    name: 'Polypropylene Twine Roll',
+    sku: 'PKG-TWINE',
+    category: 'packaging',
+    currentStock: 15,
+    unit: 'roll',
+    minStockLevel: 5,
+    location: 'Aisle B - Shelf 4',
+    supplierInfo: 'PackPro Supplies',
+    sdsUrl: '',
+    expiryDate: '',
+    notes: '',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'wh-seed-9',
+    name: 'Machine Drive Belt (Model XL-200)',
+    sku: 'SP-WSH-001',
+    category: 'spare_part',
+    currentStock: 4,
+    unit: 'pcs',
+    minStockLevel: 6,
+    location: 'Aisle C - Shelf 1',
+    supplierInfo: 'LaundryTech Parts',
+    sdsUrl: '',
+    expiryDate: '',
+    notes: 'Compatible with XL-200 series washers',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'wh-seed-10',
+    name: 'Water Inlet Valve',
+    sku: 'SP-WSH-002',
+    category: 'spare_part',
+    currentStock: 3,
+    unit: 'pcs',
+    minStockLevel: 5,
+    location: 'Aisle C - Shelf 2',
+    supplierInfo: 'LaundryTech Parts',
+    sdsUrl: '',
+    expiryDate: '',
+    notes: 'Universal 3/4" fitting',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'wh-seed-11',
+    name: 'Heavy-Duty Cleaning Brush',
+    sku: 'TCL-BRS-001',
+    category: 'cleaning_tool',
+    currentStock: 20,
+    unit: 'pcs',
+    minStockLevel: 5,
+    location: 'Aisle C - Shelf 3',
+    supplierInfo: 'CleanTools Co.',
+    sdsUrl: '',
+    expiryDate: '',
+    notes: 'Nylon bristle, 30cm handle',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'wh-seed-12',
+    name: 'Lint Filter Roll (3m)',
+    sku: 'TCL-FLT-001',
+    category: 'cleaning_tool',
+    currentStock: 6,
+    unit: 'roll',
+    minStockLevel: 3,
+    location: 'Aisle C - Shelf 4',
+    supplierInfo: 'DryerPro Supplies',
+    sdsUrl: '',
+    expiryDate: '',
+    notes: 'For industrial dryers',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+]
+
+const SEED_EQUIPMENT: EquipmentRecord[] = [
+  {
+    id: 'eq-seed-1',
+    name: 'Forklift (Electric)',
+    category: 'maintenance_equipment',
+    location: 'Warehouse Bay 1',
+    condition: 'good',
+    lastMaintenanceDate: '2026-06-01',
+    notes: 'Rated 2-ton capacity',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  },
+  {
+    id: 'eq-seed-2',
+    name: 'Pallet Jack (Manual)',
+    category: 'maintenance_equipment',
+    location: 'Warehouse Bay 2',
+    condition: 'good',
+    lastMaintenanceDate: '2026-05-15',
+    notes: '',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-05-15T00:00:00.000Z',
+  },
+  {
+    id: 'eq-seed-3',
+    name: 'Industrial Shelving Unit A',
+    category: 'maintenance_equipment',
+    location: 'Aisle A',
+    condition: 'good',
+    lastMaintenanceDate: '2026-03-01',
+    notes: '5-tier, 200kg per shelf',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-03-01T00:00:00.000Z',
+  },
+]
+
+const SEED_TRANSACTIONS: StockTransaction[] = [
+  {
+    id: 'tx-seed-1',
+    itemId: 'wh-seed-1',
+    type: 'in',
+    quantity: 50,
+    reference: 'PO-2026-001',
+    notes: 'Initial stock from ChemCo Ltd.',
+    userId: 'seed',
+    timestamp: '2026-06-01T08:00:00.000Z',
+  },
+  {
+    id: 'tx-seed-2',
+    itemId: 'wh-seed-2',
+    type: 'in',
+    quantity: 20,
+    reference: 'PO-2026-001',
+    notes: 'Initial stock from ChemCo Ltd.',
+    userId: 'seed',
+    timestamp: '2026-06-01T08:05:00.000Z',
+  },
+  {
+    id: 'tx-seed-3',
+    itemId: 'wh-seed-1',
+    type: 'out',
+    quantity: 5,
+    reference: 'PROD-2026-001',
+    notes: 'Production usage - daily wash cycle',
+    userId: 'seed',
+    timestamp: '2026-06-02T10:00:00.000Z',
+  },
+  {
+    id: 'tx-seed-4',
+    itemId: 'wh-seed-4',
+    type: 'adjustment',
+    quantity: -2,
+    reference: 'ADJ-2026-001',
+    notes: 'Inventory adjustment - damaged container spillage',
+    userId: 'seed',
+    timestamp: '2026-06-03T14:00:00.000Z',
+  },
+  {
+    id: 'tx-seed-5',
+    itemId: 'wh-seed-7',
+    type: 'in',
+    quantity: 100,
+    reference: 'PO-2026-002',
+    notes: 'Restock from BoxMakers Inc.',
+    userId: 'seed',
+    timestamp: '2026-06-05T09:00:00.000Z',
+  },
+  {
+    id: 'tx-seed-6',
+    itemId: 'wh-seed-9',
+    type: 'in',
+    quantity: 6,
+    reference: 'PO-2026-003',
+    notes: 'Backorder fulfillment from LaundryTech Parts',
+    userId: 'seed',
+    timestamp: '2026-06-07T11:00:00.000Z',
+  },
+  {
+    id: 'tx-seed-7',
+    itemId: 'wh-seed-3',
+    type: 'out',
+    quantity: 3,
+    reference: 'PROD-2026-002',
+    notes: 'Production usage',
+    userId: 'seed',
+    timestamp: '2026-06-08T10:30:00.000Z',
+  },
+]
+
+export const useWarehouseStore = create<WarehouseState>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      transactions: [],
+      returns: [],
+      receivingRecords: [],
+      equipment: [],
+      initialized: false,
+
+      addItem: (data) =>
+        set((state) => ({
+          items: [
+            ...state.items,
+            {
+              id: makeId(),
+              name: data.name,
+              sku: data.sku,
+              category: data.category,
+              currentStock: data.currentStock,
+              unit: data.unit,
+              minStockLevel: data.minStockLevel,
+              location: data.location,
+              supplierInfo: data.supplierInfo,
+              sdsUrl: data.sdsUrl,
+              expiryDate: data.expiryDate,
+              notes: data.notes,
+              createdAt: now(),
+              updatedAt: now(),
+            },
+          ],
+        })),
+
+      updateItem: (id, data) =>
+        set((state) => ({
+          items: state.items.map((i) =>
+            i.id === id ? { ...i, ...data, updatedAt: now() } : i,
+          ),
+        })),
+
+      deleteItem: (id) =>
+        set((state) => ({
+          items: state.items.filter((i) => i.id !== id),
+        })),
+
+      recordTransaction: (data) => {
+        const item = get().items.find((i) => i.id === data.itemId)
+        if (!item) return
+
+        let stockChange = 0
+        if (data.type === 'in') stockChange = data.quantity
+        else if (data.type === 'out') stockChange = -data.quantity
+        else if (data.type === 'adjustment') stockChange = data.quantity
+
+        const transaction: StockTransaction = {
+          id: makeId(),
+          itemId: data.itemId,
+          type: data.type,
+          quantity: data.quantity,
+          reference: data.reference,
+          notes: data.notes,
+          userId: data.userId,
+          timestamp: now(),
+        }
+
+        set((state) => ({
+          transactions: [...state.transactions, transaction],
+          items: state.items.map((i) =>
+            i.id === data.itemId
+              ? {
+                  ...i,
+                  currentStock: Math.max(0, i.currentStock + stockChange),
+                  updatedAt: now(),
+                }
+              : i,
+          ),
+        }))
+      },
+
+      getLowStockItems: () => {
+        return get().items.filter((i) => i.currentStock <= i.minStockLevel)
+      },
+
+      addReturn: (data) =>
+        set((state) => ({
+          returns: [
+            ...state.returns,
+            {
+              id: makeId(),
+              orderId: data.orderId,
+              customerId: data.customerId,
+              customerName: data.customerName,
+              itemDescription: data.itemDescription,
+              reason: data.reason,
+              condition: data.condition,
+              action: data.action,
+              status: 'pending',
+              createdAt: now(),
+              updatedAt: now(),
+            },
+          ],
+        })),
+
+      updateReturnStatus: (id, status) =>
+        set((state) => ({
+          returns: state.returns.map((r) =>
+            r.id === id ? { ...r, status, updatedAt: now() } : r,
+          ),
+        })),
+
+      addReceivingRecord: (data) =>
+        set((state) => ({
+          receivingRecords: [
+            ...state.receivingRecords,
+            {
+              id: makeId(),
+              supplier: data.supplier,
+              poReference: data.poReference,
+              items: data.items,
+              receivedBy: data.receivedBy,
+              status: 'pending',
+              notes: data.notes,
+              createdAt: now(),
+              updatedAt: now(),
+            },
+          ],
+        })),
+
+      completeReceiving: (id) =>
+        set((state) => ({
+          receivingRecords: state.receivingRecords.map((r) =>
+            r.id === id ? { ...r, status: 'completed', updatedAt: now() } : r,
+          ),
+        })),
+
+      addEquipment: (data) =>
+        set((state) => ({
+          equipment: [
+            ...state.equipment,
+            {
+              id: makeId(),
+              name: data.name,
+              category: data.category,
+              location: data.location,
+              condition: data.condition,
+              lastMaintenanceDate: '',
+              notes: data.notes,
+              createdAt: now(),
+              updatedAt: now(),
+            },
+          ],
+        })),
+
+      updateEquipment: (id, data) =>
+        set((state) => ({
+          equipment: state.equipment.map((e) =>
+            e.id === id ? { ...e, ...data, updatedAt: now() } : e,
+          ),
+        })),
+
+      deleteEquipment: (id) =>
+        set((state) => ({
+          equipment: state.equipment.filter((e) => e.id !== id),
+        })),
+    }),
+    {
+      name: 'laundry-warehouse-store',
+      version: 1,
+      migrate: () => ({
+        items: [],
+        transactions: [],
+        returns: [],
+        receivingRecords: [],
+        equipment: [],
+        initialized: false,
+      }),
+      merge: (persisted, current) => ({
+        ...current,
+        ...(persisted as Partial<WarehouseState>),
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (state && !state.initialized) {
+          state.items = SEED_ITEMS
+          state.equipment = SEED_EQUIPMENT
+          state.transactions = SEED_TRANSACTIONS
+          state.initialized = true
+        }
+      },
+    },
+  ),
+)
