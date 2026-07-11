@@ -29,6 +29,16 @@ import FactoryOrderListPage from './pages/orders/factory-order-list.tsx'
 import FactoryOrderDetailPage from './pages/orders/factory-order-detail.tsx'
 import FactoryReceivingPage from './pages/receiving/factory-receiving.tsx'
 import FactoryDispatchPage from './pages/dispatch/factory-dispatch.tsx'
+import RoutePlanningListPage from './pages/dispatch/route-planning-list.tsx'
+import RoutePlanningFormPage from './pages/dispatch/route-planning-form.tsx'
+import RoutePlanningDetailPage from './pages/dispatch/route-planning-detail.tsx'
+import LoadSheetPage from './pages/dispatch/load-sheet.tsx'
+import DriverSchedulePage from './pages/dispatch/driver-schedule.tsx'
+import LiveTrackingPage from './pages/dispatch/live-tracking.tsx'
+import StopTimelinePage from './pages/dispatch/stop-timeline.tsx'
+import ChangeRequestsPage from './pages/dispatch/change-requests.tsx'
+import ReportingDashboardPage from './pages/dispatch/reporting-dashboard.tsx'
+import DriverKPIPage from './pages/dispatch/driver-kpi.tsx'
 import WarehouseDashboardPage from './pages/warehouse/warehouse-dashboard.tsx'
 import WarehouseInventoryPage from './pages/warehouse/warehouse-inventory.tsx'
 import WarehouseInventoryFormPage from './pages/warehouse/warehouse-inventory-form.tsx'
@@ -60,6 +70,8 @@ import DriverTasks from './pages/driver/driver-tasks.tsx'
 import DriverScan from './pages/driver/driver-scan.tsx'
 import DriverDeliveryProof from './pages/driver/driver-delivery-proof.tsx'
 import DriverProfile from './pages/driver/driver-profile.tsx'
+import DriverManagementListPage from './pages/drivers/driver-management-list.tsx'
+import DriverManagementFormPage from './pages/drivers/driver-management-form.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -103,6 +115,20 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/factory/dashboard" element={<FactoryDashboard />} />
             <Route path="/factory/receiving" element={<FactoryReceivingPage />} />
             <Route path="/factory/dispatch" element={<FactoryDispatchPage />} />
+            <Route path="/factory/dispatch/routes" element={<RoutePlanningListPage />} />
+            <Route path="/factory/dispatch/routes/new" element={<RoutePlanningFormPage />} />
+            <Route path="/factory/dispatch/routes/:id" element={<RoutePlanningDetailPage />} />
+            <Route path="/factory/dispatch/routes/:id/edit" element={<RoutePlanningFormPage />} />
+            <Route path="/factory/dispatch/routes/:routeId/load-sheet" element={<LoadSheetPage />} />
+            <Route path="/factory/dispatch/driver-schedule" element={<DriverSchedulePage />} />
+            <Route path="/factory/dispatch/live-tracking" element={<LiveTrackingPage />} />
+            <Route path="/factory/dispatch/routes/:routeId/timeline" element={<StopTimelinePage />} />
+            <Route path="/factory/dispatch/change-requests" element={<ChangeRequestsPage />} />
+            <Route path="/factory/dispatch/reports" element={<ReportingDashboardPage />} />
+            <Route path="/factory/dispatch/driver-kpi" element={<DriverKPIPage />} />
+            <Route path="/factory/drivers" element={<DriverManagementListPage />} />
+            <Route path="/factory/drivers/new" element={<DriverManagementFormPage />} />
+            <Route path="/factory/drivers/:id/edit" element={<DriverManagementFormPage />} />
             <Route path="/factory/role-levels" element={<RoleLevelListPage />} />
             <Route path="/factory/role-levels/new" element={<RoleLevelFormPage />} />
             <Route path="/factory/role-levels/:id/edit" element={<RoleLevelFormPage />} />

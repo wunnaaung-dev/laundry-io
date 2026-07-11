@@ -6,6 +6,7 @@ import {
 } from '@/components/ui/sidebar.tsx'
 import { FactorySidebar } from '@/components/factory-sidebar.tsx'
 import { Separator } from '@/components/ui/separator.tsx'
+import { NotificationBell } from '@/components/notification-bell.tsx'
 
 export default function FactoryLayout() {
   return (
@@ -16,6 +17,9 @@ export default function FactoryLayout() {
           <SidebarTrigger />
           <Separator orientation="vertical" className="h-6" />
           <h1 className="text-sm font-semibold">Factory Dashboard</h1>
+          <div className="ml-auto">
+            <NotificationBell />
+          </div>
         </header>
         <main className="flex-1 p-6">
           <Outlet />

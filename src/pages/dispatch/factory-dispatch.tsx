@@ -14,15 +14,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.t
 import { useCustomerStore } from '@/stores/customer-store.ts'
 import { useOrderStore } from '@/stores/order-store.ts'
 import { useWarehouseStore } from '@/stores/warehouse-store.ts'
-import { Search, Truck } from 'lucide-react'
+import { useDeliveryStore } from '@/stores/delivery-store.ts'
+import { AddStopDialog } from './add-stop-dialog.tsx'
+import { Search, Truck, Route } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 export default function FactoryDispatchPage() {
+  const navigate = useNavigate()
   const customers = useCustomerStore((s) => s.customers)
   const orders = useOrderStore((s) => s.orders)
   const linenStagingRecords = useWarehouseStore((s) => s.linenStagingRecords)
+  const stops = useDeliveryStore((s) => s.stops)
   const [searchQuery, setSearchQuery] = useState('')
+  const [addStopOpen, setAddStopOpen] = useState(false)
 
   const customerMap = new Map(customers.map((c) => [c.id, c.companyName]))
+
+  const lotsOnRoute = new Set(stops.map((s) => s.lotId))
 
   const dispatchedOrders = orders.filter(
     (o) =>
@@ -38,11 +46,15 @@ export default function FactoryDispatchPage() {
           .map((r) => r.lotId),
       )
       const readyLots = order.lots.filter(
-        (l) => l.status === 'dispatch' && stagedLotIds.has(l.id),
+        (l) =>
+          l.status === 'dispatch' &&
+          stagedLotIds.has(l.id) &&
+          !lotsOnRoute.has(l.id),
       )
       return { order, readyLots }
     })
-    .filter(({ order }) => {
+    .filter(({ order, readyLots }) => {
+      if (readyLots.length === 0) return false
       if (!searchQuery.trim()) return true
       const q = searchQuery.toLowerCase()
       return (
@@ -57,14 +69,25 @@ export default function FactoryDispatchPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Dispatch — Load to Truck</CardTitle>
-            <div className="relative w-64">
-              <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-              <Input
-                placeholder="Search order or hotel..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8"
-              />
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1"
+                onClick={() => navigate('/factory/dispatch/routes')}
+              >
+                <Route className="size-3.5" />
+                Route Planning
+              </Button>
+              <div className="relative w-64">
+                <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search order or hotel..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -73,7 +96,7 @@ export default function FactoryDispatchPage() {
             <p className="text-sm text-muted-foreground text-center py-8">
               {searchQuery.trim()
                 ? 'No matching orders ready for dispatch.'
-                : 'No lots are ready for dispatch. Move dispatched lots to Clean Linen Staging first.'}
+                : 'All lots have been assigned to routes. No lots remaining for dispatch.'}
             </p>
           ) : (
             <div className="space-y-6">
@@ -127,8 +150,7 @@ export default function FactoryDispatchPage() {
                                 <Button
                                   size="sm"
                                   className="gap-1"
-                                  disabled
-                                  title="Loading to truck coming in a future update"
+                                  onClick={() => setAddStopOpen(true)}
                                 >
                                   <Truck className="size-3.5" />
                                   Load
@@ -146,6 +168,12 @@ export default function FactoryDispatchPage() {
           )}
         </CardContent>
       </Card>
+
+      <AddStopDialog
+        open={addStopOpen}
+        onOpenChange={setAddStopOpen}
+        selectedRouteId=""
+      />
     </div>
   )
 }

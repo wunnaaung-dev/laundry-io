@@ -1,7 +1,10 @@
 import { useRef, useState, type PointerEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useDriverStore } from '@/stores/driver-store.ts'
+import { useDeliveryStore } from '@/stores/delivery-store.ts'
+import { useDeliveryEventStore } from '@/stores/delivery-event-store.ts'
 import { useOrderStore } from '@/stores/order-store.ts'
+import { useAuthStore } from '@/stores/auth-store.ts'
 import { Button } from '@/components/ui/button.tsx'
 import {
   Card,
@@ -27,7 +30,8 @@ export default function DriverDeliveryProof() {
   const [photo, setPhoto] = useState<string | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
   const [completed, setCompleted] = useState(false)
-  const { completeDelivery } = useDriverStore()
+  const { completeDelivery, tasks } = useDriverStore()
+  const user = useAuthStore((s) => s.user)
   const navigate = useNavigate()
 
   const startDrawing = (e: PointerEvent<HTMLCanvasElement>) => {
@@ -79,6 +83,21 @@ export default function DriverDeliveryProof() {
     if (orderId) {
       const { transitionOrder } = useOrderStore.getState()
       transitionOrder(orderId, 'delivered')
+      const task = tasks.find((t) => t.orderId === orderId)
+      if (task?.stopId) {
+        const stop = useDeliveryStore.getState().stops.find((s) => s.id === task.stopId)
+        if (stop) {
+          useDeliveryEventStore.getState().addEvent({
+            stopId: task.stopId,
+            routeId: stop.routeId,
+            eventType: 'signature',
+            description: `Delivery confirmed for ${task.clientName}`,
+            photoUrl: photo ?? undefined,
+            userId: user?.id ?? 'driver',
+            userName: user?.name ?? 'Driver',
+          })
+        }
+      }
     }
     completeDelivery()
     setShowConfirm(false)
