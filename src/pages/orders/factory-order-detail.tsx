@@ -25,9 +25,25 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog.tsx'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog.tsx'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select.tsx'
 import { useCustomerStore } from '@/stores/customer-store.ts'
 import { useOrderStore } from '@/stores/order-store.ts'
+import { useWarehouseStore } from '@/stores/warehouse-store.ts'
 import type { OrderStatus, LotStatus } from '@/types/customer.ts'
+import { Warehouse } from 'lucide-react'
 
 const ORDER_LABELS: Record<OrderStatus, string> = {
   draft: 'Draft',
@@ -35,6 +51,7 @@ const ORDER_LABELS: Record<OrderStatus, string> = {
   ready_to_deliver: 'Ready to Deliver',
   in_transit: 'In Transit',
   delivered: 'Delivered',
+  received_at_factory: 'Received at Factory',
   cancelled: 'Cancelled',
 }
 
@@ -96,6 +113,11 @@ export default function FactoryOrderDetailPage() {
 
   const [editingLotId, setEditingLotId] = useState<string | null>(null)
   const [editRoute, setEditRoute] = useState('')
+  const [stagingLotId, setStagingLotId] = useState<string | null>(null)
+  const [stagingZoneId, setStagingZoneId] = useState('')
+  const warehouseZones = useWarehouseStore((s) => s.warehouseZones)
+  const stageLinenLot = useWarehouseStore((s) => s.stageLinenLot)
+  const linenStagingRecords = useWarehouseStore((s) => s.linenStagingRecords)
 
   const order = orders.find((o) => o.id === id)
   if (!order) {
@@ -141,6 +163,19 @@ export default function FactoryOrderDetailPage() {
       setEditingLotId(null)
       setEditRoute('')
     }
+  }
+
+  function handleStageLot(lotId: string) {
+    if (!id || !stagingZoneId) return
+    const lot = order?.lots.find((l) => l.id === lotId)
+    if (!lot) return
+    stageLinenLot(lotId, lot.lotNumber, id, stagingZoneId)
+    setStagingLotId(null)
+    setStagingZoneId('')
+  }
+
+  function isLotStaged(lotId: string) {
+    return linenStagingRecords.some((r) => r.lotId === lotId)
   }
 
   const allDispatched = order.lots.length > 0 && order.lots.every(
@@ -195,9 +230,13 @@ export default function FactoryOrderDetailPage() {
             </div>
           )}
 
-          {order.status === 'ready_to_deliver' && order.lots.length === 0 && (
+          {(order.status === 'ready_to_deliver' || order.status === 'delivered') && order.lots.length === 0 && (
             <div className="flex gap-2">
-              <Button onClick={handleCheckIn}>Check In &amp; Generate Lots</Button>
+              <Button onClick={handleCheckIn}>
+                {order.status === 'delivered'
+                  ? 'Confirm Arrival & Generate Lots'
+                  : 'Check In & Generate Lots'}
+              </Button>
               <Button
                 variant="destructive"
                 onClick={() => handleOrderTransition('cancelled')}
@@ -207,10 +246,10 @@ export default function FactoryOrderDetailPage() {
             </div>
           )}
 
-          {allDispatched && (
+          {allDispatched && order.status === 'received_at_factory' && (
             <div className="rounded-lg border border-primary/50 bg-primary/5 p-4 text-sm">
               All lots have passed QC and are ready for dispatch.
-              (Dispatch workflow coming in a future update.)
+              Move them to Clean Linen Staging to prepare for truck loading.
             </div>
           )}
         </CardContent>
@@ -333,6 +372,26 @@ export default function FactoryOrderDetailPage() {
                         {action.label}
                       </Button>
                     ))}
+                    {lot.status === 'dispatch' && !isLotStaged(lot.id) && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="gap-1"
+                        onClick={() => {
+                          setStagingLotId(lot.id)
+                          setStagingZoneId('')
+                        }}
+                      >
+                        <Warehouse className="size-3.5" />
+                        Move to Staging
+                      </Button>
+                    )}
+                    {lot.status === 'dispatch' && isLotStaged(lot.id) && (
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <Warehouse className="size-3" />
+                        Staged
+                      </Badge>
+                    )}
                     {lot.status !== 'dispatch' && lot.status !== 'qc' && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -382,6 +441,49 @@ export default function FactoryOrderDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      <Dialog
+        open={stagingLotId !== null}
+        onOpenChange={(open) => {
+          if (!open) setStagingLotId(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Move to Clean Linen Staging</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="staging-zone">Warehouse Zone</Label>
+              <Select value={stagingZoneId} onValueChange={setStagingZoneId}>
+                <SelectTrigger id="staging-zone">
+                  <SelectValue placeholder="Select a zone" />
+                </SelectTrigger>
+                <SelectContent>
+                  {warehouseZones.map((zone) => (
+                    <SelectItem key={zone.id} value={zone.id}>
+                      {zone.name} ({zone.type})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStagingLotId(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (stagingLotId) handleStageLot(stagingLotId)
+              }}
+              disabled={!stagingZoneId}
+            >
+              Move to Zone
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

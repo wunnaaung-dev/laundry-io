@@ -27,6 +27,8 @@ import HotelOrderFormPage from './pages/orders/hotel-order-form.tsx'
 import HotelOrderDetailPage from './pages/orders/hotel-order-detail.tsx'
 import FactoryOrderListPage from './pages/orders/factory-order-list.tsx'
 import FactoryOrderDetailPage from './pages/orders/factory-order-detail.tsx'
+import FactoryReceivingPage from './pages/receiving/factory-receiving.tsx'
+import FactoryDispatchPage from './pages/dispatch/factory-dispatch.tsx'
 import WarehouseDashboardPage from './pages/warehouse/warehouse-dashboard.tsx'
 import WarehouseInventoryPage from './pages/warehouse/warehouse-inventory.tsx'
 import WarehouseInventoryFormPage from './pages/warehouse/warehouse-inventory-form.tsx'
@@ -99,6 +101,8 @@ createRoot(document.getElementById('root')!).render(
         >
           <Route element={<FactoryLayout />}>
             <Route path="/factory/dashboard" element={<FactoryDashboard />} />
+            <Route path="/factory/receiving" element={<FactoryReceivingPage />} />
+            <Route path="/factory/dispatch" element={<FactoryDispatchPage />} />
             <Route path="/factory/role-levels" element={<RoleLevelListPage />} />
             <Route path="/factory/role-levels/new" element={<RoleLevelFormPage />} />
             <Route path="/factory/role-levels/:id/edit" element={<RoleLevelFormPage />} />

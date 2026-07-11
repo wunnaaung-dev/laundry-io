@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, TriangleAlert, ExternalLink, FileWarning } from 'lucide-react'
+import { ArrowLeft, TriangleAlert, ExternalLink, FileWarning, Warehouse } from 'lucide-react'
 import { Button } from '@/components/ui/button.tsx'
 import { Badge } from '@/components/ui/badge.tsx'
 import {
@@ -14,6 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip.tsx'
 import { useWarehouseStore } from '@/stores/warehouse-store.ts'
+import { useOrderStore } from '@/stores/order-store.ts'
 import {
   CATEGORY_LABELS,
   CATEGORY_VARIANTS,
@@ -32,6 +33,8 @@ export default function WarehouseZoneDetailPage() {
   const zones = useWarehouseStore((s) => s.warehouseZones)
   const items = useWarehouseStore((s) => s.items)
   const transactions = useWarehouseStore((s) => s.transactions)
+  const linenStagingRecords = useWarehouseStore((s) => s.linenStagingRecords)
+  const orders = useOrderStore((s) => s.orders)
 
   const zone = zones.find((z) => z.id === zoneId)
 
@@ -54,6 +57,22 @@ export default function WarehouseZoneDetailPage() {
     () => new Map(zoneItems.map((i) => [i.id, i])),
     [zoneItems],
   )
+
+  const stagedLots = useMemo(
+    () => linenStagingRecords.filter((r) => r.zoneId === zoneId),
+    [linenStagingRecords, zoneId],
+  )
+
+  const stagedLotOrderMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const r of stagedLots) {
+      if (!map.has(r.orderId)) {
+        const order = orders.find((o) => o.id === r.orderId)
+        map.set(r.orderId, order?.id.slice(0, 8) ?? r.orderId.slice(0, 8))
+      }
+    }
+    return map
+  }, [stagedLots, orders])
 
   const usedCapacity = useMemo(
     () =>
@@ -324,6 +343,43 @@ export default function WarehouseZoneDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {stagedLots.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Warehouse className="size-4" />
+              Staged Linen Lots
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Lot Number</TableHead>
+                  <TableHead>Order</TableHead>
+                  <TableHead>Staged At</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {stagedLots.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-mono text-xs font-semibold">
+                      {r.lotNumber}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      #{stagedLotOrderMap.get(r.orderId) ?? r.orderId.slice(0, 8)}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {new Date(r.timestamp).toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

@@ -24,7 +24,8 @@ const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   scheduled: ['ready_to_deliver', 'cancelled'],
   ready_to_deliver: ['in_transit', 'delivered', 'cancelled'],
   in_transit: ['delivered', 'cancelled'],
-  delivered: [],
+  delivered: ['received_at_factory', 'cancelled'],
+  received_at_factory: ['cancelled'],
   cancelled: [],
 }
 
@@ -208,12 +209,26 @@ export const useOrderStore = create<OrderState>()(
 
       checkInOrder: (id) => {
         const order = get().orders.find((o) => o.id === id)
-        if (!order || order.status !== 'ready_to_deliver') return
+        if (!order) return
+        const allowedStatuses: OrderStatus[] = ['ready_to_deliver', 'delivered']
+        if (!allowedStatuses.includes(order.status)) return
+        const target: OrderStatus = 'received_at_factory'
+        const entry: StatusHistoryEntry = {
+          from: order.status,
+          to: target,
+          timestamp: now(),
+        }
         const lots = autoGenerateLots(order.items)
         set((state) => ({
           orders: state.orders.map((o) =>
             o.id === id
-              ? { ...o, lots, updatedAt: now() }
+              ? {
+                  ...o,
+                  lots,
+                  status: target,
+                  statusHistory: [...o.statusHistory, entry],
+                  updatedAt: now(),
+                }
               : o,
           ),
         }))

@@ -20,6 +20,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
   ready_to_deliver: 'Ready to Deliver',
   in_transit: 'In Transit',
   delivered: 'Delivered',
+  received_at_factory: 'Received at Factory',
   cancelled: 'Cancelled',
 }
 

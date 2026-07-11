@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useDriverStore } from '@/stores/driver-store.ts'
+import { useOrderStore } from '@/stores/order-store.ts'
 import { Button } from '@/components/ui/button.tsx'
 import { Input } from '@/components/ui/input.tsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx'
@@ -14,16 +15,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog.tsx'
-import { Scan, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Scan, CheckCircle2, AlertCircle, Warehouse } from 'lucide-react'
 
 export default function DriverScan() {
   const { orderId } = useParams()
   const [code, setCode] = useState('')
   const [lastResult, setLastResult] = useState<'success' | 'mismatch' | null>(null)
   const [showMismatch, setShowMismatch] = useState(false)
-  const { recordScan, tasks } = useDriverStore()
+  const [delivered, setDelivered] = useState(false)
+  const { recordScan, tasks, updateTaskStatus } = useDriverStore()
 
   const taskId = orderId ?? tasks[0]?.id ?? ''
+  const currentTask = tasks.find((t) => t.id === taskId)
 
   const handleScan = () => {
     if (!code.trim()) return
@@ -43,6 +46,26 @@ export default function DriverScan() {
           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300 text-sm px-4 py-1">
             Scan Successful
           </Badge>
+          {!delivered && currentTask?.status === 'completed' && (
+            <Button
+              className="w-full mt-2 h-12 text-base gap-2"
+              size="lg"
+              variant="secondary"
+              onClick={() => {
+                useOrderStore.getState().transitionOrder(currentTask.orderId, 'delivered')
+                updateTaskStatus(currentTask.id, 'delivered')
+                setDelivered(true)
+              }}
+            >
+              <Warehouse className="size-5" />
+              Unload at Factory
+            </Button>
+          )}
+          {delivered && (
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300 text-sm px-4 py-1">
+              Delivered
+            </Badge>
+          )}
         </div>
       )}
 

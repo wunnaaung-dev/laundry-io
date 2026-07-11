@@ -19,6 +19,7 @@ export const ZONE_TYPE_LABELS: Record<string, string> = {
   floor: 'Floor',
   bin: 'Bin',
   cold_storage: 'Cold Storage',
+  staging: 'Staging',
 }
 
 export const HAZARDOUS_CATEGORIES: ReadonlySet<WarehouseItemCategory> = new Set([

@@ -47,7 +47,17 @@ export type ReturnStatus = 'pending' | 'resolved'
 
 export type ReceivingStatus = 'pending' | 'completed'
 
-export type WarehouseZoneType = 'shelf' | 'rack' | 'floor' | 'bin' | 'cold_storage'
+export type WarehouseZoneType = 'shelf' | 'rack' | 'floor' | 'bin' | 'cold_storage' | 'staging'
+
+export interface LinenStagingRecord {
+  id: string
+  lotId: string
+  lotNumber: string
+  orderId: string
+  zoneId: string
+  zoneName: string
+  timestamp: string
+}
 
 export interface WarehouseZone {
   id: string

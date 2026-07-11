@@ -70,6 +70,7 @@ export type OrderStatus =
   | 'ready_to_deliver'
   | 'in_transit'
   | 'delivered'
+  | 'received_at_factory'
   | 'cancelled'
 
 export interface StatusHistoryEntry {

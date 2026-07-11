@@ -40,6 +40,7 @@ export default function WarehouseStoragePage() {
 
     for (const zone of zones) {
       const zoneItems = zoneMap.get(zone.id) ?? []
+      zoneMap.delete(zone.id)
       const used = zoneItems.reduce(
         (sum, i) => sum + i.currentStock * (i.capacityUnits ?? 1),
         0,
@@ -55,6 +56,12 @@ export default function WarehouseStoragePage() {
             ? Math.min(used / zone.capacityUnits, 1)
             : 0,
       })
+    }
+
+    for (const [, orphanedItems] of zoneMap) {
+      for (const item of orphanedItems) {
+        fallbackItems.push(item)
+      }
     }
 
     if (fallbackItems.length > 0) {

@@ -10,6 +10,7 @@ import type {
   ReturnRecord,
   ReceivingRecord,
   EquipmentRecord,
+  LinenStagingRecord,
   StockTransactionType,
   ReturnAction,
   ReturnStatus,
@@ -35,6 +36,7 @@ interface WarehouseState {
   receivingRecords: ReceivingRecord[]
   equipment: EquipmentRecord[]
   initialized: boolean
+  linenStagingRecords: LinenStagingRecord[]
 
   addItem: (data: {
     name: string
@@ -152,6 +154,10 @@ interface WarehouseState {
   updateWarehouse: (id: string, data: Partial<Warehouse>) => void
 
   deleteWarehouse: (id: string) => void
+
+  stageLinenLot: (lotId: string, lotNumber: string, orderId: string, zoneId: string) => void
+
+  getStagedLotsByOrder: (orderId: string) => LinenStagingRecord[]
 }
 
 function migrateLocationsToZones(
@@ -206,6 +212,7 @@ const SEED_ZONES: WarehouseZone[] = [
   { id: 'zone-c2', name: 'Aisle C - Shelf 2', capacityUnits: 100, type: 'shelf' },
   { id: 'zone-c3', name: 'Aisle C - Shelf 3', capacityUnits: 100, type: 'shelf' },
   { id: 'zone-c4', name: 'Aisle C - Shelf 4', capacityUnits: 100, type: 'shelf' },
+  { id: 'zone-staging', name: 'Clean Linen Staging', capacityUnits: 500, type: 'staging' },
 ]
 
 const SEED_ITEMS: WarehouseItem[] = [
@@ -547,6 +554,7 @@ export const useWarehouseStore = create<WarehouseState>()(
       receivingRecords: [],
       equipment: [],
       initialized: false,
+      linenStagingRecords: [],
 
       addItem: (data) =>
         set((state) => {
@@ -776,6 +784,29 @@ export const useWarehouseStore = create<WarehouseState>()(
         set((state) => ({
           warehouses: state.warehouses.filter((w) => w.id !== id),
         })),
+
+      stageLinenLot: (lotId, lotNumber, orderId, zoneId) => {
+        const zone = get().warehouseZones.find((z) => z.id === zoneId)
+        if (!zone) return
+        set((state) => ({
+          linenStagingRecords: [
+            ...state.linenStagingRecords,
+            {
+              id: makeId(),
+              lotId,
+              lotNumber,
+              orderId,
+              zoneId,
+              zoneName: zone.name,
+              timestamp: now(),
+            },
+          ],
+        }))
+      },
+
+      getStagedLotsByOrder: (orderId) => {
+        return get().linenStagingRecords.filter((r) => r.orderId === orderId)
+      },
     }),
     {
       name: 'laundry-warehouse-store',
@@ -799,6 +830,7 @@ export const useWarehouseStore = create<WarehouseState>()(
           receivingRecords: data.receivingRecords ?? [],
           equipment: data.equipment ?? [],
           initialized: data.initialized ?? false,
+          linenStagingRecords: [],
         }
       },
       merge: (persisted, current) => ({
