@@ -28,6 +28,8 @@ export interface HotelStoredItem {
   quantity: number
 }
 
+export type DeliveryStatus = 'pending' | 'confirmed' | 'rejected'
+
 export interface LinenMovement {
   id: string
   zoneId: string
@@ -39,4 +41,5 @@ export interface LinenMovement {
   notes: string
   userId: string
   timestamp: string
+  deliveryStatus?: DeliveryStatus
 }

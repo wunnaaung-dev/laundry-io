@@ -45,6 +45,11 @@ interface HotelStorageState {
   }) => void
   getMovementsByZone: (zoneId: string) => LinenMovement[]
   getMovementsByCategory: (category: LinenCategory) => LinenMovement[]
+
+  reportForDelivery: (movementId: string) => void
+  confirmDelivery: (movementId: string) => void
+  rejectDelivery: (movementId: string) => void
+  getPendingDeliveryMovements: () => LinenMovement[]
 }
 
 const SEED_ZONES: HotelZone[] = [
@@ -278,6 +283,30 @@ export const useHotelStorageStore = create<HotelStorageState>()(
 
       getMovementsByCategory: (category) =>
         get().movements.filter((m) => m.category === category),
+
+      reportForDelivery: (movementId) =>
+        set((state) => ({
+          movements: state.movements.map((m) =>
+            m.id === movementId ? { ...m, deliveryStatus: 'pending' } : m,
+          ),
+        })),
+
+      confirmDelivery: (movementId) =>
+        set((state) => ({
+          movements: state.movements.map((m) =>
+            m.id === movementId ? { ...m, deliveryStatus: 'confirmed' } : m,
+          ),
+        })),
+
+      rejectDelivery: (movementId) =>
+        set((state) => ({
+          movements: state.movements.map((m) =>
+            m.id === movementId ? { ...m, deliveryStatus: 'rejected' } : m,
+          ),
+        })),
+
+      getPendingDeliveryMovements: () =>
+        get().movements.filter((m) => m.deliveryStatus === 'pending'),
     }),
     {
       name: 'laundry-hotel-storage-store',

@@ -271,6 +271,7 @@ export default function HotelZoneDetailPage() {
                   <TableHead>Quantity</TableHead>
                   <TableHead>Reason</TableHead>
                   <TableHead>Reference</TableHead>
+                  <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -306,6 +307,30 @@ export default function HotelZoneDetailPage() {
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {m.reference || '—'}
+                    </TableCell>
+                    <TableCell>
+                      {m.deliveryStatus === undefined ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => useHotelStorageStore.getState().reportForDelivery(m.id)}
+                        >
+                          Report for Delivery
+                        </Button>
+                      ) : (
+                        <span
+                          className={
+                            'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ' +
+                            (m.deliveryStatus === 'pending'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : m.deliveryStatus === 'confirmed'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800')
+                          }
+                        >
+                          {m.deliveryStatus.charAt(0).toUpperCase() + m.deliveryStatus.slice(1)}
+                        </span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
