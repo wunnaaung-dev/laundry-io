@@ -37,6 +37,8 @@ import DriverSchedulePage from './pages/dispatch/driver-schedule.tsx'
 import LiveTrackingPage from './pages/dispatch/live-tracking.tsx'
 import StopTimelinePage from './pages/dispatch/stop-timeline.tsx'
 import ChangeRequestsPage from './pages/dispatch/change-requests.tsx'
+import ClaimsListPage from './pages/dispatch/claims-list.tsx'
+import ClaimDetailPage from './pages/dispatch/claim-detail.tsx'
 import ReportingDashboardPage from './pages/dispatch/reporting-dashboard.tsx'
 import DriverKPIPage from './pages/dispatch/driver-kpi.tsx'
 import WarehouseDashboardPage from './pages/warehouse/warehouse-dashboard.tsx'
@@ -68,6 +70,7 @@ import DriverLayout from './layouts/driver-layout.tsx'
 import DriverDashboard from './pages/driver/driver-dashboard.tsx'
 import DriverTasks from './pages/driver/driver-tasks.tsx'
 import DriverScan from './pages/driver/driver-scan.tsx'
+import DriverReadyOrders from './pages/driver/driver-ready-orders.tsx'
 import DriverDeliveryProof from './pages/driver/driver-delivery-proof.tsx'
 import DriverProfile from './pages/driver/driver-profile.tsx'
 import DriverManagementListPage from './pages/drivers/driver-management-list.tsx'
@@ -124,6 +127,8 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/factory/dispatch/live-tracking" element={<LiveTrackingPage />} />
             <Route path="/factory/dispatch/routes/:routeId/timeline" element={<StopTimelinePage />} />
             <Route path="/factory/dispatch/change-requests" element={<ChangeRequestsPage />} />
+            <Route path="/factory/dispatch/claims" element={<ClaimsListPage />} />
+            <Route path="/factory/dispatch/claims/:id" element={<ClaimDetailPage />} />
             <Route path="/factory/dispatch/reports" element={<ReportingDashboardPage />} />
             <Route path="/factory/dispatch/driver-kpi" element={<DriverKPIPage />} />
             <Route path="/factory/drivers" element={<DriverManagementListPage />} />
@@ -180,6 +185,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/driver/scan" element={<DriverScan />} />
             <Route path="/driver/scan/:orderId" element={<DriverScan />} />
             <Route path="/driver/delivery-proof/:orderId" element={<DriverDeliveryProof />} />
+            <Route path="/driver/ready-orders" element={<DriverReadyOrders />} />
             <Route path="/driver/profile" element={<DriverProfile />} />
             <Route path="/driver" element={<Navigate to="/driver/dashboard" replace />} />
           </Route>

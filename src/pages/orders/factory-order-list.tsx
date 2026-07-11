@@ -27,6 +27,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
   ready_to_deliver: 'Ready to Deliver',
   in_transit: 'In Transit',
   delivered: 'Delivered',
+  return_delivered: 'Return Delivered',
   received_at_factory: 'Received at Factory',
   cancelled: 'Cancelled',
 }
@@ -37,6 +38,7 @@ const STATUS_VARIANTS: Record<OrderStatus, 'secondary' | 'outline' | 'default' |
   ready_to_deliver: 'default',
   in_transit: 'default',
   delivered: 'outline',
+  return_delivered: 'default',
   received_at_factory: 'default',
   cancelled: 'destructive',
 }

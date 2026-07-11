@@ -23,6 +23,7 @@ export interface SLA {
   qualityStandards: string
   serviceScope: LinenCategory[]
   penaltyClauses: string
+  claimWindowHours?: number
 }
 
 export interface PerItemPricing {
@@ -70,6 +71,7 @@ export type OrderStatus =
   | 'ready_to_deliver'
   | 'in_transit'
   | 'delivered'
+  | 'return_delivered'
   | 'received_at_factory'
   | 'cancelled'
 
@@ -77,6 +79,7 @@ export interface StatusHistoryEntry {
   from: OrderStatus
   to: OrderStatus
   timestamp: string
+  notes?: string
 }
 
 export type LotStatus =
@@ -121,6 +124,8 @@ export interface Order {
   expectedCost: number
   pickupDate?: string
   notes?: string
+  billingHold: boolean
+  billingHoldReason?: string
   createdAt: string
   updatedAt: string
 }

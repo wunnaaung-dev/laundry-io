@@ -59,6 +59,7 @@ export function AddStopDialog({
   const linenStagingRecords = useWarehouseStore((s) => s.linenStagingRecords)
   const addStop = useDeliveryStore((s) => s.addStop)
   const addRushStop = useDeliveryStore((s) => s.addRushStop)
+  const pairStops = useDeliveryStore((s) => s.pairStops)
   const routes = useDeliveryStore((s) => s.routes)
   const allStops = useDeliveryStore((s) => s.stops)
 
@@ -69,6 +70,8 @@ export function AddStopDialog({
   const [priority, setPriority] = useState('2')
   const [notes, setNotes] = useState('')
   const [isRush, setIsRush] = useState(false)
+  const [stopType, setStopType] = useState<'delivery' | 'pickup'>('delivery')
+  const [pairedStopId, setPairedStopId] = useState<string | null>(null)
 
   const customerMap = new Map(customers.map((c) => [c.id, c.companyName]))
   const customerAddresses = new Map(
@@ -122,24 +125,30 @@ export function AddStopDialog({
       timeWindowEnd,
       priority: Number(priority),
       notes,
+      stopType,
     }
 
-    let ok: boolean
+    let stopId: string | null
     if (isRush) {
-      ok = addRushStop(stopData)
+      stopId = addRushStop(stopData)
     } else {
-      ok = addStop(stopData)
+      stopId = addStop(stopData)
     }
 
-    if (!ok) {
+    if (!stopId) {
       setCapacityError('Cannot add stop: driver capacity would be exceeded.')
       return
+    }
+
+    if (pairedStopId) {
+      pairStops(pairedStopId, stopId)
     }
 
     setCapacityError('')
     setSelectedLotId(null)
     setNotes('')
     setIsRush(false)
+    setPairedStopId(null)
     onStopAdded?.()
   }
 
@@ -255,6 +264,40 @@ export function AddStopDialog({
               </Select>
             </div>
           </div>
+
+          <div className="space-y-2">
+            <Label>Stop Type</Label>
+            <Select value={stopType} onValueChange={(v) => setStopType(v as 'delivery' | 'pickup')}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="delivery">Delivery (Clean Linen → Hotel)</SelectItem>
+                <SelectItem value="pickup">Pickup (Used Linen ← Hotel)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {stopType === 'pickup' && (
+            <div className="space-y-2">
+              <Label>Pair with Delivery Stop (optional)</Label>
+              <Select value={pairedStopId ?? ''} onValueChange={(v) => setPairedStopId(v || null)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select delivery stop to pair with" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No pairing</SelectItem>
+                  {allStops
+                    .filter((s) => s.routeId === routeId && s.stopType === 'delivery')
+                    .map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.customerName} — {s.lotNumber}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {capacityError && (
             <p className="text-sm text-destructive">{capacityError}</p>

@@ -67,8 +67,6 @@ export default function StandingOrdersPage() {
                     (r) => r.customerId === customerId && r.category === cat,
                   )
                   const ratio = s.parLevel > 0 ? s.inStock / s.parLevel : 1
-                  const needsOrder =
-                    rule?.enabled && ratio < (rule.triggerThreshold ?? 0.8)
 
                   return (
                     <TableRow key={cat}>

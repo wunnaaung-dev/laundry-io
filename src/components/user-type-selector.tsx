@@ -1,7 +1,7 @@
 import { Label } from '@/components/ui/label.tsx'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group.tsx'
 
-export type UserTypeOption = 'factory' | 'client' | 'driver'
+export type UserTypeOption = 'factory' | 'client' | 'driver' | 'dispatcher'
 
 interface UserTypeSelectorProps {
   value: UserTypeOption
@@ -23,6 +23,11 @@ const OPTIONS: { value: UserTypeOption; label: string; desc: string }[] = [
     value: 'driver',
     label: 'Driver',
     desc: 'Delivery drivers',
+  },
+  {
+    value: 'dispatcher',
+    label: 'Dispatcher',
+    desc: 'Dispatch & route planners',
   },
 ]
 

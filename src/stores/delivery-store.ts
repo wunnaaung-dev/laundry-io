@@ -54,7 +54,8 @@ interface DeliveryState {
     timeWindowEnd: string
     priority: number
     notes: string
-  }) => boolean
+    stopType?: 'delivery' | 'pickup'
+  }) => string | null
 
   updateStop: (stopId: string, data: Partial<RouteStop>) => void
 
@@ -78,7 +79,10 @@ interface DeliveryState {
     timeWindowEnd: string
     priority: number
     notes: string
-  }) => boolean
+    stopType?: 'delivery' | 'pickup'
+  }) => string | null
+
+  pairStops: (deliveryStopId: string, pickupStopId: string) => void
 
   optimizeRoute: (routeId: string) => void
 
@@ -153,11 +157,18 @@ export const useDeliveryStore = create<DeliveryState>()(
             })
           }
           useNotificationStore.getState().addNotification({
-            userId: route.driverId,
+            recipientIds: [route.driverId],
             type: 'route_activated',
             title: 'Route Activated',
             body: `Route "${route.name}" has been published. ${routeStops.length} stop(s) assigned.`,
             link: `/driver/tasks`,
+          })
+          useNotificationStore.getState().addNotification({
+            recipientIds: ['default-hotel-admin-user'],
+            type: 'order_dispatched',
+            title: 'Order Dispatched',
+            body: `Route "${route.name}" is en route — ${routeStops.length} stop(s).`,
+            link: `/hotel/orders`,
           })
         }
         return true
@@ -165,7 +176,7 @@ export const useDeliveryStore = create<DeliveryState>()(
 
       addStop: (data) => {
         const route = get().routes.find((r) => r.id === data.routeId)
-        if (!route) return false
+        if (!route) return null
 
         const driver = useDriverManagementStore.getState().driverProfiles.find(
           (d) => d.id === route.driverId,
@@ -182,16 +193,17 @@ export const useDeliveryStore = create<DeliveryState>()(
               const lot = o?.lots.find((l) => l.id === s.lotId)
               return sum + (lot?.estimatedWeightKg ?? 0)
             }, 0)
-          if (currentWeight + newLotWeight > driver.maxCapacityKg) return false
+          if (currentWeight + newLotWeight > driver.maxCapacityKg) return null
         }
 
         const existing = get().stops.filter((s) => s.routeId === data.routeId)
         const nextSortOrder = existing.length
+        const id = makeId()
         set((state) => ({
           stops: [
             ...state.stops,
             {
-              id: makeId(),
+              id,
               routeId: data.routeId,
               orderId: data.orderId,
               lotId: data.lotId,
@@ -204,6 +216,7 @@ export const useDeliveryStore = create<DeliveryState>()(
               priority: data.priority,
               sortOrder: nextSortOrder,
               status: 'pending',
+              stopType: data.stopType ?? 'delivery',
               notes: data.notes,
               createdAt: now(),
               updatedAt: now(),
@@ -214,7 +227,7 @@ export const useDeliveryStore = create<DeliveryState>()(
           const { transitionOrder } = useOrderStore.getState()
           transitionOrder(data.orderId, 'in_transit')
         }
-        return true
+        return id
       },
 
       updateStop: (stopId, data) =>
@@ -282,7 +295,7 @@ export const useDeliveryStore = create<DeliveryState>()(
         const route = get().routes.find((r) => r.id === stop.routeId)
         if (route) {
           useNotificationStore.getState().addNotification({
-            userId: route.driverId,
+            recipientIds: [route.driverId, 'default-factory-admin-user', 'default-hotel-admin-user'],
             type: 'missed_delivery',
             title: 'Missed Delivery',
             body: `Stop at ${stop.customerName} (${stop.timeWindowStart}-${stop.timeWindowEnd}) was marked missed.`,
@@ -294,15 +307,16 @@ export const useDeliveryStore = create<DeliveryState>()(
 
       addRushStop: (data) => {
         const route = get().routes.find((r) => r.id === data.routeId)
-        if (!route) return false
+        if (!route) return null
 
         const existing = get().stops.filter((s) => s.routeId === data.routeId)
         const nextSortOrder = existing.length
+        const id = makeId()
         set((state) => ({
           stops: [
             ...state.stops,
             {
-              id: makeId(),
+              id,
               routeId: data.routeId,
               orderId: data.orderId,
               lotId: data.lotId,
@@ -315,6 +329,7 @@ export const useDeliveryStore = create<DeliveryState>()(
               priority: 1,
               sortOrder: nextSortOrder,
               status: 'pending',
+              stopType: data.stopType ?? 'delivery',
               notes: `RUSH: ${data.notes}`,
               createdAt: now(),
               updatedAt: now(),
@@ -326,14 +341,25 @@ export const useDeliveryStore = create<DeliveryState>()(
           transitionOrder(data.orderId, 'in_transit')
         }
         useNotificationStore.getState().addNotification({
-          userId: route.driverId,
+          recipientIds: [route.driverId],
           type: 'rush_order',
           title: 'Rush Order Added',
           body: `Rush stop for ${data.customerName} added to route "${route.name}".`,
           link: `/driver/tasks`,
         })
-        return true
+        return id
       },
+
+      pairStops: (deliveryStopId, pickupStopId) =>
+        set((state) => ({
+          stops: state.stops.map((s) =>
+            s.id === deliveryStopId
+              ? { ...s, pairedStopId: pickupStopId, updatedAt: now() }
+              : s.id === pickupStopId
+                ? { ...s, pairedStopId: deliveryStopId, updatedAt: now() }
+                : s,
+          ),
+        })),
 
       optimizeRoute: (routeId) =>
         set((state) => ({

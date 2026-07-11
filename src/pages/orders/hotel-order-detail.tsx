@@ -11,8 +11,9 @@ import {
 } from '@/components/ui/table.tsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx'
 import { useCustomerStore } from '@/stores/customer-store.ts'
-import { useOrderStore } from '@/stores/order-store.ts'
+import { useOrderStore, computeOrderTAT } from '@/stores/order-store.ts'
 import type { OrderStatus, LotStatus } from '@/types/customer.ts'
+import { TatGauge } from '@/components/tat-gauge.tsx'
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
   draft: 'Draft',
@@ -20,6 +21,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
   ready_to_deliver: 'Ready to Deliver',
   in_transit: 'In Transit',
   delivered: 'Delivered',
+  return_delivered: 'Return Delivered',
   received_at_factory: 'Received at Factory',
   cancelled: 'Cancelled',
 }
@@ -93,9 +95,14 @@ export default function HotelOrderDetailPage() {
                 {contract?.contractName ?? 'Unknown'}
               </p>
             </div>
-            <Badge variant={order.status === 'cancelled' ? 'destructive' : 'default'}>
-              {STATUS_LABELS[order.status]}
-            </Badge>
+            <div className="flex items-center gap-2">
+              {order.billingHold && (
+                <Badge variant="destructive">Billing Hold</Badge>
+              )}
+              <Badge variant={order.status === 'cancelled' ? 'destructive' : 'default'}>
+                {STATUS_LABELS[order.status]}
+              </Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -117,6 +124,17 @@ export default function HotelOrderDetailPage() {
               </p>
             </div>
           </div>
+
+          {order.billingHold && order.billingHoldReason && (
+            <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-3 text-sm text-destructive">
+              <p className="font-semibold">Billing Hold — Manual Review</p>
+              <p className="mt-1">{order.billingHoldReason}</p>
+            </div>
+          )}
+
+          {order.status !== 'draft' && order.status !== 'scheduled' && order.status !== 'cancelled' && (
+            <TatGauge {...computeOrderTAT(order, contract ?? undefined)} />
+          )}
 
           {order.notes && (
             <div className="text-sm">

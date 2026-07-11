@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { DeliveryEvent, DeliveryEventType } from '../types/delivery.ts'
+import { useNotificationStore } from './notification-store.ts'
 
 function makeId(): string {
   return crypto.randomUUID()
@@ -57,6 +58,15 @@ export const useDeliveryEventStore = create<DeliveryEventState>()(
             },
           ],
         }))
+        if (data.eventType === 'arrival') {
+          useNotificationStore.getState().addNotification({
+            recipientIds: ['default-hotel-admin-user'],
+            type: 'driver_arrived',
+            title: 'Driver Arrived',
+            body: data.description,
+            link: `/hotel/orders`,
+          })
+        }
         return id
       },
 

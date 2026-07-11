@@ -1,5 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { useInvoiceStore } from './invoice-store.ts'
+import { useCustomerStore } from './customer-store.ts'
+import { useNotificationStore } from './notification-store.ts'
 import type {
   Order,
   OrderItem,
@@ -9,6 +12,7 @@ import type {
   LotStatus,
   LotStatusHistoryEntry,
   LinenCategory,
+  Contract,
 } from '../types/customer.ts'
 
 function makeId(): string {
@@ -24,8 +28,9 @@ const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   scheduled: ['ready_to_deliver', 'cancelled'],
   ready_to_deliver: ['in_transit', 'delivered', 'cancelled'],
   in_transit: ['delivered', 'cancelled'],
-  delivered: ['received_at_factory', 'cancelled'],
-  received_at_factory: ['cancelled'],
+  delivered: ['received_at_factory', 'return_delivered', 'cancelled'],
+  return_delivered: ['cancelled'],
+  received_at_factory: ['in_transit', 'cancelled'],
   cancelled: [],
 }
 
@@ -46,6 +51,47 @@ let lotCounter = 0
 function nextLotNumber(): string {
   lotCounter++
   return `LOT-${String(lotCounter).padStart(2, '0')}`
+}
+
+export function getDeliveryMismatchSeverity(
+  expectedQty: number,
+  actualQty: number,
+): 'none' | 'minor' | 'major' {
+  if (expectedQty <= 0) return 'none'
+  const variance = Math.abs(expectedQty - actualQty) / expectedQty
+  if (variance < 0.05) return 'none'
+  if (variance < 0.15) return 'minor'
+  return 'major'
+}
+
+export function computeOrderTAT(
+  order: Order,
+  contract?: Contract,
+): { elapsedHours: number; targetHours: number; status: 'on_track' | 'at_risk' | 'breached' } {
+  const targetHours = contract?.sla.tatHours ?? 24
+  const receivedEntry = order.statusHistory.find(
+    (h) => h.to === 'received_at_factory',
+  )
+  const startTime = receivedEntry
+    ? new Date(receivedEntry.timestamp).getTime()
+    : new Date(order.createdAt).getTime()
+
+  const deliveredEntry = order.statusHistory.find(
+    (h) => h.to === 'return_delivered',
+  )
+  const endTime = deliveredEntry
+    ? new Date(deliveredEntry.timestamp).getTime()
+    : Date.now()
+
+  const elapsedHours = (endTime - startTime) / (1000 * 60 * 60)
+  const ratio = elapsedHours / targetHours
+
+  let status: 'on_track' | 'at_risk' | 'breached'
+  if (ratio >= 1) status = 'breached'
+  else if (ratio >= 0.8) status = 'at_risk'
+  else status = 'on_track'
+
+  return { elapsedHours, targetHours, status }
 }
 
 export function autoGenerateLots(items: OrderItem[]): Lot[] {
@@ -133,6 +179,11 @@ interface OrderState {
   setLotQcResult: (orderId: string, lotId: string, passed: boolean) => void
 
   getOrdersByCustomer: (customerId: string) => Order[]
+  getOrdersByContract: (contractId: string) => Order[]
+
+  confirmDelivery: (id: string, actualLots?: Array<{ lotId: string; scannedQty: number }>) => void
+
+  checkForTatBreach: () => void
 }
 
 export const useOrderStore = create<OrderState>()(
@@ -155,6 +206,7 @@ export const useOrderStore = create<OrderState>()(
             expectedCost: data.expectedCost,
             pickupDate: data.pickupDate,
             notes: data.notes,
+            billingHold: false,
             createdAt: now(),
             updatedAt: now(),
           }
@@ -348,6 +400,116 @@ export const useOrderStore = create<OrderState>()(
 
       getOrdersByCustomer: (customerId) =>
         get().orders.filter((o) => o.customerId === customerId),
+
+      getOrdersByContract: (contractId) =>
+        get().orders.filter((o) => o.contractId === contractId),
+
+      confirmDelivery: (id, actualLots) => {
+        const order = get().orders.find((o) => o.id === id)
+        if (!order) return
+        if (order.status !== 'delivered') return
+
+        let totalExpected = 0
+        let totalActual = 0
+        for (const item of order.items) {
+          totalExpected += item.quantity
+          if (actualLots && actualLots.length > 0) {
+            for (const actual of actualLots) {
+              if (order.lots.find((l) => l.id === actual.lotId && l.category === item.category)) {
+                totalActual += actual.scannedQty
+              }
+            }
+          } else {
+            totalActual = totalExpected
+          }
+        }
+
+        const severity = getDeliveryMismatchSeverity(totalExpected, totalActual)
+        const entry: StatusHistoryEntry = {
+          from: 'delivered',
+          to: 'return_delivered',
+          timestamp: now(),
+        }
+
+        if (severity === 'major') {
+          entry.notes = `Major mismatch (${Math.abs(totalExpected - totalActual)} pcs) — billing hold`
+          set((state) => ({
+            orders: state.orders.map((o) =>
+              o.id === id
+                ? {
+                    ...o,
+                    status: 'return_delivered',
+                    billingHold: true,
+                    billingHoldReason: `Major mismatch (${Math.abs(totalExpected - totalActual)} pcs difference) — manual review required`,
+                    statusHistory: [...o.statusHistory, entry],
+                    updatedAt: now(),
+                  }
+                : o,
+            ),
+          }))
+        } else if (severity === 'minor') {
+          entry.notes = `Minor mismatch (${Math.abs(totalExpected - totalActual)} pcs) — invoiced at actual qty`
+          set((state) => ({
+            orders: state.orders.map((o) =>
+              o.id === id
+                ? {
+                    ...o,
+                    status: 'return_delivered',
+                    statusHistory: [...o.statusHistory, entry],
+                    updatedAt: now(),
+                  }
+                : o,
+            ),
+          }))
+          const { generateInvoice } = useInvoiceStore.getState()
+          generateInvoice(id, undefined, totalActual)
+        } else {
+          set((state) => ({
+            orders: state.orders.map((o) =>
+              o.id === id
+                ? {
+                    ...o,
+                    status: 'return_delivered',
+                    statusHistory: [...o.statusHistory, entry],
+                    updatedAt: now(),
+                  }
+                : o,
+            ),
+          }))
+          const { generateInvoice } = useInvoiceStore.getState()
+          generateInvoice(id, undefined, totalActual)
+        }
+
+        const tat = computeOrderTAT(order)
+        if (tat.status === 'breached') {
+          useNotificationStore.getState().addNotification({
+            recipientIds: ['default-factory-admin-user'],
+            type: 'tat_breach',
+            title: 'TAT Breach',
+            body: `Order #${id.slice(0, 8)} exceeded TAT of ${tat.targetHours}h (${Math.round(tat.elapsedHours)}h elapsed).`,
+            link: `/factory/orders/${id}`,
+          })
+        }
+      },
+
+      checkForTatBreach: () => {
+        const { orders } = get()
+        const contracts = useCustomerStore.getState().contracts
+        for (const order of orders) {
+          if (order.status === 'return_delivered' || order.status === 'cancelled') continue
+          const contract = contracts.find((c) => c.id === order.contractId)
+          const tat = computeOrderTAT(order, contract)
+          if (tat.status === 'breached') {
+            useNotificationStore.getState().addNotification({
+              recipientIds: ['default-factory-admin-user'],
+              type: 'tat_breach',
+              title: 'TAT Breach',
+              body: `Order #${order.id.slice(0, 8)} exceeded TAT of ${tat.targetHours}h (${Math.round(tat.elapsedHours)}h elapsed).`,
+              link: `/factory/orders/${order.id}`,
+            })
+          }
+        }
+      },
     }),
     {
       name: 'laundry-order-store',

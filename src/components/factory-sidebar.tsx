@@ -28,6 +28,7 @@ const navItems = [
   { title: 'Driver Schedule', url: '/factory/dispatch/driver-schedule' },
   { title: 'Live Tracking', url: '/factory/dispatch/live-tracking' },
   { title: 'Change Requests', url: '/factory/dispatch/change-requests' },
+  { title: 'Claims', url: '/factory/dispatch/claims' },
   { title: 'Driver KPIs', url: '/factory/dispatch/driver-kpi' },
   { title: 'Reports', url: '/factory/dispatch/reports' },
   { title: 'Dispatch', url: '/factory/dispatch' },

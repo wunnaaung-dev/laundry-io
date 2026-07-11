@@ -9,7 +9,6 @@ import type {
   RejectRecord,
 } from '../types/hotel-linen.ts'
 import type { LinenCategory } from '../types/customer.ts'
-import { useCustomerStore } from './customer-store.ts'
 
 function makeId(): string {
   return crypto.randomUUID()

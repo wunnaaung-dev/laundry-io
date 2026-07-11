@@ -5,6 +5,7 @@ import { useOrderStore } from '@/stores/order-store.ts'
 import { useDeliveryStore } from '@/stores/delivery-store.ts'
 import { useDeliveryEventStore } from '@/stores/delivery-event-store.ts'
 import { useAuthStore } from '@/stores/auth-store.ts'
+import { useClaimStore } from '@/stores/claim-store.ts'
 import { Button } from '@/components/ui/button.tsx'
 import { Input } from '@/components/ui/input.tsx'
 import { Label } from '@/components/ui/label.tsx'
@@ -20,13 +21,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog.tsx'
-import { Scan, CheckCircle2, AlertCircle, Warehouse, Package } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog.tsx'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select.tsx'
+import { Scan, CheckCircle2, AlertCircle, Warehouse, Package, FileWarning } from 'lucide-react'
 
 export default function DriverScan() {
   const { orderId } = useParams()
   const [code, setCode] = useState('')
   const [lastResult, setLastResult] = useState<'success' | 'mismatch' | null>(null)
   const [showMismatch, setShowMismatch] = useState(false)
+  const [showClaimDialog, setShowClaimDialog] = useState(false)
+  const [claimDescription, setClaimDescription] = useState('')
+  const [claimTeam, setClaimTeam] = useState<'factory_qc' | 'logistics'>('factory_qc')
   const [delivered, setDelivered] = useState(false)
   const [cartCount, setCartCount] = useState(0)
   const [weightKg, setWeightKg] = useState(0)
@@ -42,14 +61,16 @@ export default function DriverScan() {
     if (!code.trim()) return
     const success = recordScan(taskId, code.trim())
     setLastResult(success ? 'success' : 'mismatch')
-    if (success && currentTask?.stopId) {
+    if (currentTask?.stopId) {
       const stop = useDeliveryStore.getState().stops.find((s) => s.id === currentTask.stopId)
       if (stop) {
         useDeliveryEventStore.getState().addEvent({
           stopId: currentTask.stopId,
           routeId: stop.routeId,
           eventType: 'scan',
-          description: `Scanned ${code} for ${currentTask.clientName}`,
+          description: success
+            ? `Scanned ${code} for ${currentTask.clientName}`
+            : `Mismatch: scanned "${code}" — did not match expected item for ${currentTask.clientName}`,
           scannedCode: code.trim(),
           cartCount,
           weightKg: weightKg || undefined,
@@ -185,19 +206,83 @@ export default function DriverScan() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
               <AlertCircle className="size-5" />
-              Mismatch Detected
+              Discrepancy Noted
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Check Item Again. The scanned code does not match the expected item for this task.
+              The scanned code did not match the expected item. The delivery has been recorded with this discrepancy. You can log a claim now or file one later from the factory portal.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="gap-2">
             <AlertDialogAction onClick={() => setShowMismatch(false)}>
-              Try Again
+              Continue
             </AlertDialogAction>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowMismatch(false)
+                setShowClaimDialog(true)
+              }}
+            >
+              <FileWarning className="size-4 mr-1" />
+              Log Claim
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={showClaimDialog} onOpenChange={setShowClaimDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Log Discrepancy Claim</DialogTitle>
+            <DialogDescription>
+              Describe the mismatch so the factory team can review.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="claim-desc">Description</Label>
+              <textarea
+                id="claim-desc"
+                className="w-full min-h-[80px] rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+                placeholder="e.g. Expected 50 towels, scanned only 48"
+                value={claimDescription}
+                onChange={(e) => setClaimDescription(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="claim-team">Resolution Team</Label>
+              <Select value={claimTeam} onValueChange={(v) => setClaimTeam(v as 'factory_qc' | 'logistics')}>
+                <SelectTrigger id="claim-team">
+                  <SelectValue placeholder="Select team" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="factory_qc">Factory QC</SelectItem>
+                  <SelectItem value="logistics">Logistics</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowClaimDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                useClaimStore.getState().createClaim({
+                  orderId: currentTask?.orderId ?? '',
+                  stopId: currentTask?.stopId ?? '',
+                  description: claimDescription || 'Scan mismatch during delivery',
+                  resolutionTeam: claimTeam as 'factory_qc' | 'logistics',
+                })
+                setShowClaimDialog(false)
+                setClaimDescription('')
+              }}
+            >
+              Submit Claim
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

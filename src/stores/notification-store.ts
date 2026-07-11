@@ -1,26 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-
-export type NotificationType =
-  | 'route_activated'
-  | 'route_changed'
-  | 'stop_completed'
-  | 'order_transition'
-  | 'rush_order'
-  | 'missed_delivery'
-  | 'change_request'
-  | 'general'
-
-export interface AppNotification {
-  id: string
-  userId: string
-  type: NotificationType
-  title: string
-  body: string
-  link?: string
-  read: boolean
-  createdAt: string
-}
+import type { AppNotification, NotificationType } from '../types/notification.ts'
 
 function makeId(): string {
   return crypto.randomUUID()
@@ -34,12 +14,12 @@ interface NotificationState {
   notifications: AppNotification[]
 
   addNotification: (data: {
-    userId: string
+    recipientIds: string[]
     type: NotificationType
     title: string
     body: string
     link?: string
-  }) => string
+  }) => string[]
 
   markRead: (notificationId: string) => void
   markAllRead: (userId: string) => void
@@ -55,23 +35,27 @@ export const useNotificationStore = create<NotificationState>()(
       notifications: [],
 
       addNotification: (data) => {
-        const id = makeId()
-        set((state) => ({
-          notifications: [
-            ...state.notifications,
-            {
+        const ids: string[] = []
+        set((state) => {
+          const newNotifications = data.recipientIds.map((recipientId) => {
+            const id = makeId()
+            ids.push(id)
+            return {
               id,
-              userId: data.userId,
+              recipientIds: [recipientId],
               type: data.type,
               title: data.title,
               body: data.body,
               link: data.link,
               read: false,
               createdAt: now(),
-            },
-          ],
-        }))
-        return id
+            } satisfies AppNotification
+          })
+          return {
+            notifications: [...state.notifications, ...newNotifications],
+          }
+        })
+        return ids
       },
 
       markRead: (notificationId) =>
@@ -84,16 +68,16 @@ export const useNotificationStore = create<NotificationState>()(
       markAllRead: (userId) =>
         set((state) => ({
           notifications: state.notifications.map((n) =>
-            n.userId === userId ? { ...n, read: true } : n,
+            n.recipientIds.includes(userId) ? { ...n, read: true } : n,
           ),
         })),
 
       getUnreadCount: (userId) =>
-        get().notifications.filter((n) => n.userId === userId && !n.read).length,
+        get().notifications.filter((n) => n.recipientIds.includes(userId) && !n.read).length,
 
       getNotificationsForUser: (userId) =>
         get()
-          .notifications.filter((n) => n.userId === userId)
+          .notifications.filter((n) => n.recipientIds.includes(userId))
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
 
       removeNotification: (notificationId) =>
@@ -103,15 +87,30 @@ export const useNotificationStore = create<NotificationState>()(
 
       clearAll: (userId) =>
         set((state) => ({
-          notifications: state.notifications.filter((n) => n.userId !== userId),
+          notifications: state.notifications.filter((n) => !n.recipientIds.includes(userId)),
         })),
     }),
     {
       name: 'laundry-notification-store',
-      version: 1,
-      migrate: (persisted: unknown) => {
-        const data = persisted as Partial<NotificationState>
-        return { notifications: data.notifications ?? [] }
+      version: 2,
+      migrate: (persisted: unknown, version: number) => {
+        const raw = persisted as { notifications?: Array<Record<string, unknown>> }
+        const oldNotifications = (raw.notifications ?? []) as Array<{ userId?: string; id: string; type: string; title: string; body: string; link?: string; read: boolean; createdAt: string }>
+        if (version < 2 && oldNotifications.length > 0) {
+          return {
+            notifications: oldNotifications.map((n) => ({
+              id: n.id,
+              recipientIds: n.userId ? [n.userId] : [],
+              type: n.type,
+              title: n.title,
+              body: n.body,
+              link: n.link,
+              read: n.read,
+              createdAt: n.createdAt,
+            })),
+          }
+        }
+        return { notifications: (raw.notifications ?? []) as unknown as AppNotification[] }
       },
       merge: (persisted, current) => ({
         ...current,

@@ -7,6 +7,7 @@ import { useOrderStore } from './order-store.ts'
 import { useDeliveryStore } from './delivery-store.ts'
 import { useDeliveryEventStore } from './delivery-event-store.ts'
 import { useAuthStore } from './auth-store.ts'
+import { useNotificationStore } from './notification-store.ts'
 
 export type TripStatus = 'idle' | 'in_transit' | 'arrived' | 'delivered'
 
@@ -22,6 +23,7 @@ export interface DriverTask {
   routeId?: string
   routeName?: string
   stopId?: string
+  pairedTaskId?: string
 }
 
 export interface ScanRecord {
@@ -104,7 +106,7 @@ export const useDriverStore = create<DriverState>()(
                   scannedItems: success
                     ? [...t.scannedItems, code]
                     : t.scannedItems,
-                  status: success ? 'completed' : 'mismatch',
+                  status: 'completed',
                 }
               : t,
           ),
@@ -129,6 +131,16 @@ export const useDriverStore = create<DriverState>()(
               })
             }
           }
+        }
+
+        if (!success) {
+          useNotificationStore.getState().addNotification({
+            recipientIds: ['default-factory-admin-user', 'default-dispatcher-user'],
+            type: 'count_mismatch',
+            title: 'Scan Mismatch',
+            body: `Scanned code "${code}" did not match expected item for ${task.clientName}.`,
+            link: `/factory/orders/${task.orderId}`,
+          })
         }
 
         return success
@@ -172,7 +184,7 @@ export const useDriverStore = create<DriverState>()(
               lotDescription,
               scheduledTime:
                 order.pickupDate ?? new Date().toLocaleDateString(),
-              type: 'delivery',
+              type: 'pickup',
               status: 'pending',
               scannedItems: [],
             })
@@ -200,6 +212,7 @@ export const useDriverStore = create<DriverState>()(
         set((state) => {
           const existingOrderIds = new Set(state.tasks.map((t) => t.orderId))
           const newTasks: DriverTask[] = []
+          const pairedStops = routeStops.filter((rs) => rs.stop.pairedStopId)
 
           for (const { stop, route } of routeStops) {
             if (existingOrderIds.has(stop.orderId)) continue
@@ -208,19 +221,34 @@ export const useDriverStore = create<DriverState>()(
               ? order.items.map((i) => `${i.quantity} ${i.category}`).join(', ')
               : stop.lotNumber
 
+            const pairedTask = pairedStops.find((ps) => ps.stop.id === stop.pairedStopId)
+            const taskId = crypto.randomUUID()
+
             newTasks.push({
-              id: crypto.randomUUID(),
+              id: taskId,
               orderId: stop.orderId,
               clientName: stop.customerName,
               lotDescription,
               scheduledTime: `${route.scheduledDate ?? ''} ${stop.timeWindowStart}-${stop.timeWindowEnd}`,
-              type: 'delivery',
+              type: stop.stopType ?? 'delivery',
               status: stop.status === 'completed' ? 'completed' : 'pending',
               scannedItems: [],
               routeId: route.id,
               routeName: route.name,
               stopId: stop.id,
             })
+
+            if (pairedTask) {
+              const pairedTaskRef = newTasks.find(
+                (nt) => nt.stopId === stop.pairedStopId,
+              )
+              if (pairedTaskRef) {
+                newTasks[newTasks.length - 1] = {
+                  ...newTasks[newTasks.length - 1],
+                  pairedTaskId: pairedTaskRef.id,
+                }
+              }
+            }
           }
 
           const keptTasks = state.tasks.filter((t) => {

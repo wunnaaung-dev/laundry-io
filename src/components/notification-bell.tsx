@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth-store.ts'
 import { useNotificationStore } from '@/stores/notification-store.ts'
+import type { AppNotification } from '@/types/notification.ts'
 import { Button } from '@/components/ui/button.tsx'
 import { Badge } from '@/components/ui/badge.tsx'
 import { Separator } from '@/components/ui/separator.tsx'
@@ -24,7 +25,7 @@ export function NotificationBell() {
   if (!user) return null
 
   const userNotifications = notifications
-    .filter((n) => n.userId === user.id)
+    .filter((n: AppNotification) => n.recipientIds.includes(user.id))
     .sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),

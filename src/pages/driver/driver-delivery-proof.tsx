@@ -81,8 +81,8 @@ export default function DriverDeliveryProof() {
 
   const handleConfirm = () => {
     if (orderId) {
-      const { transitionOrder } = useOrderStore.getState()
-      transitionOrder(orderId, 'delivered')
+      const { confirmDelivery } = useOrderStore.getState()
+      confirmDelivery(orderId)
       const task = tasks.find((t) => t.orderId === orderId)
       if (task?.stopId) {
         const stop = useDeliveryStore.getState().stops.find((s) => s.id === task.stopId)

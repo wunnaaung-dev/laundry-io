@@ -1,10 +1,11 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button.tsx'
-import { LayoutDashboard, ListChecks, Scan, User } from 'lucide-react'
+import { LayoutDashboard, ListChecks, Scan, User, Package } from 'lucide-react'
 
 const tabs = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/driver/dashboard' },
   { label: 'Tasks', icon: ListChecks, path: '/driver/tasks' },
+  { label: 'Ready', icon: Package, path: '/driver/ready-orders' },
   { label: 'Scan', icon: Scan, path: '/driver/scan' },
   { label: 'Profile', icon: User, path: '/driver/profile' },
 ]

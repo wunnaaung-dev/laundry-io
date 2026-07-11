@@ -18,12 +18,14 @@ const TYPE_TO_SCOPE: Record<UserTypeOption, 'hotel' | 'factory' | 'driver'> = {
   factory: 'factory',
   client: 'hotel',
   driver: 'driver',
+  dispatcher: 'factory',
 }
 
 const TYPE_TO_ROLE: Record<UserTypeOption, UserRole> = {
   factory: 'factory_super_admin',
   client: 'hotel_super_admin',
   driver: 'driver',
+  dispatcher: 'dispatcher',
 }
 
 export default function UserFormPage() {

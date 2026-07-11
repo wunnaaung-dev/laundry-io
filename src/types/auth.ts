@@ -1,4 +1,4 @@
-export type UserRole = 'hotel_super_admin' | 'factory_super_admin' | 'driver'
+export type UserRole = 'hotel_super_admin' | 'factory_super_admin' | 'driver' | 'dispatcher'
 
 export type ResourceModule =
   | 'customer_profile'

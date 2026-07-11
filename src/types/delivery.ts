@@ -105,6 +105,8 @@ export interface RouteStop {
   priority: number
   sortOrder: number
   status: StopStatus
+  stopType: 'delivery' | 'pickup'
+  pairedStopId?: string
   notes: string
   createdAt: string
   updatedAt: string

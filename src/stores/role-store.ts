@@ -6,6 +6,7 @@ import type {
   ResourceModule,
   AccessLevel,
   Scope,
+  UserRole,
 } from '../types/auth.ts'
 
 function makeId(): string {
@@ -62,7 +63,7 @@ interface RoleState {
     email: string
     password: string
     name: string
-    role: 'hotel_super_admin' | 'factory_super_admin' | 'driver'
+    role: UserRole
     roleLevelId: string
   }) => void
   updateUser: (
@@ -70,7 +71,7 @@ interface RoleState {
     data: {
       email: string
       name: string
-      role: 'hotel_super_admin' | 'factory_super_admin' | 'driver'
+      role: UserRole
       roleLevelId: string
     },
   ) => void
@@ -80,6 +81,7 @@ interface RoleState {
 const HOTEL_SUPER_ADMIN_ROLE_ID = 'default-hotel-super-admin'
 const FACTORY_SUPER_ADMIN_ROLE_ID = 'default-factory-super-admin'
 const DRIVER_ROLE_ID = 'default-driver'
+const DISPATCHER_ROLE_ID = 'default-dispatcher'
 
 const DEFAULT_ROLE_LEVELS: RoleLevel[] = [
   {
@@ -116,6 +118,23 @@ const DEFAULT_ROLE_LEVELS: RoleLevel[] = [
     createdAt: now(),
     updatedAt: now(),
   },
+  {
+    id: DISPATCHER_ROLE_ID,
+    name: 'Dispatcher',
+    description: 'Manages dispatch, delivery routes, and notifications',
+    scope: 'factory',
+    permissions: {
+      ...fullPermissions('none'),
+      dispatch_delivery: 'admin',
+      notification: 'edit',
+      order_management: 'edit',
+      linen_tracking: 'view',
+      customer_profile: 'view',
+      billing_cashflow: 'view',
+    },
+    createdAt: now(),
+    updatedAt: now(),
+  },
 ]
 
 const DEFAULT_USERS: StoredUser[] = [
@@ -148,6 +167,17 @@ const DEFAULT_USERS: StoredUser[] = [
     name: 'Driver User',
     role: 'driver',
     roleLevelId: DRIVER_ROLE_ID,
+    isDeleted: false,
+    createdAt: now(),
+    updatedAt: now(),
+  },
+  {
+    id: 'default-dispatcher-user',
+    email: 'dispatcher@laundry.com',
+    password: 'dispatcher123',
+    name: 'Dispatcher',
+    role: 'dispatcher',
+    roleLevelId: DISPATCHER_ROLE_ID,
     isDeleted: false,
     createdAt: now(),
     updatedAt: now(),
